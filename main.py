@@ -16,7 +16,12 @@ from train import train
 
 
 def main():
-    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    if torch.has_mps:
+        device = torch.device('mps')
+    elif torch.cuda.is_available():
+        device = torch.device('cuda')
+    else:
+        device = torch.device('cpu')
 
     parent_parser = argparse.ArgumentParser(description='Training of HiDDeN nets')
     subparsers = parent_parser.add_subparsers(dest='command', help='Sub-parser for commands')
