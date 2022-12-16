@@ -40,3 +40,6 @@ __pycache__/
 data/
 runs/
 saved-runs/
+
+# OSX specific
+.DS_Store
