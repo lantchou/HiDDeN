@@ -43,3 +43,6 @@ saved-runs/
 
 # OSX specific
 .DS_Store
+
+# venv
+venv/
