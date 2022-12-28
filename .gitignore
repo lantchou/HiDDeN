@@ -40,9 +40,7 @@ __pycache__/
 data/
 runs/
 saved-runs/
+venv/
 
 # OSX specific
 .DS_Store
-
-# venv
-venv/
