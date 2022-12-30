@@ -137,7 +137,7 @@ def main():
         logging.info(f'Loading checkpoint from file {loaded_checkpoint_file_name}')
         utils.model_from_checkpoint(model, checkpoint)
 
-    logging.info('HiDDeN model: {}\n'.format(model.to_stirng()))
+    logging.info('HiDDeN model: {}\n'.format(model.to_string()))
     logging.info('Model Configuration:\n')
     logging.info(pprint.pformat(vars(hidden_config)))
     logging.info('\nNoise configuration:\n')

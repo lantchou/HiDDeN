@@ -180,5 +180,5 @@ class Hidden:
         }
         return losses, (encoded_images, noised_images, decoded_messages)
 
-    def to_stirng(self):
+    def to_string(self):
         return '{}\n{}'.format(str(self.encoder_decoder), str(self.discriminator))
