@@ -14,16 +14,16 @@ class EncoderDecoder(nn.Module):
     a three-tuple: (encoded_image, noised_image, decoded_message)
     """
     def __init__(self, config: HiDDenConfiguration, noiser: Noiser):
-
         super(EncoderDecoder, self).__init__()
         self.encoder = Encoder(config)
         self.noiser = noiser
-
+        self.config = config
         self.decoder = Decoder(config)
 
     def forward(self, image, message):
         encoded_image = self.encoder(image, message)
         noised_and_cover = self.noiser([encoded_image, image])
         noised_image = noised_and_cover[0]
-        decoded_message = self.decoder(noised_image)
+        nc = self.config.encoder_blocks
+        decoded_message = self.decoder(noised_image[:, :, nc:-nc, nc:-nc])
         return encoded_image, noised_image, decoded_message

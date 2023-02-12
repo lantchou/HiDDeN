@@ -8,18 +8,21 @@ class Decoder(nn.Module):
     Decoder module. Receives a watermarked image and extracts the watermark.
     The input image may have various kinds of noise applied to it,
     such as Crop, JpegCompression, and so on. See Noise layers for more.
+
+    Sidenote: we do not add a padding to the convolution layers in the decoder,
+    to allow different image resolutions without largely fluctuating bit error
+    rates.
     """
     def __init__(self, config: HiDDenConfiguration):
 
         super(Decoder, self).__init__()
         self.channels = config.decoder_channels
 
-        layers = [ConvBNRelu(3, self.channels)]
+        layers = [ConvBNRelu(3, self.channels, padding=0)]
         for _ in range(config.decoder_blocks - 1):
-            layers.append(ConvBNRelu(self.channels, self.channels))
+            layers.append(ConvBNRelu(self.channels, self.channels, padding=0))
 
-        # layers.append(block_builder(self.channels, config.message_length))
-        layers.append(ConvBNRelu(self.channels, config.message_length))
+        layers.append(ConvBNRelu(self.channels, config.message_length, padding=0))
 
         layers.append(nn.AdaptiveAvgPool2d(output_size=(1, 1)))
         self.layers = nn.Sequential(*layers)
