@@ -40,11 +40,12 @@ def main():
     parser.add_argument('--image-folder', '-i', required=True, type=str,
                         help='Folder with test images')
     parser.add_argument('--image-size', '-s', type=int, default=128, help='Image size')
+    parser.add_argument('--resize', '-r', action=argparse.BooleanOptionalAction, default=False, help='Resize if true, else crop')
     args = parser.parse_args()
 
     hidden_net, hidden_config = load_model(args.options_file, args.checkpoint_file, device)
 
-    images = load_test_images(args.image_size, device, True)
+    images = load_test_images(args.image_size, device, args.resize)
     image_count = images.shape[0]
 
     messages = np.random.choice([0, 1],
