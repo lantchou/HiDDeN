@@ -77,7 +77,7 @@ def train(model: Hidden,
             message = torch.Tensor(np.random.choice([0, 1], (image.shape[0], hidden_config.message_length))).to(device)
             losses, (encoded_images, noised_images, decoded_messages) = model.validate_on_batch([image, message])
             for name, loss in losses.items():
-                validation_losses[name].update(loss)
+                validation_losses[name.strip() + "_val"].update(loss)
             if first_iteration:
                 if hidden_config.enable_fp16:
                     image = image.float()
@@ -87,6 +87,9 @@ def train(model: Hidden,
                                   epoch,
                                   os.path.join(this_run_folder, 'images'), resize_to=saved_images_size)
                 first_iteration = False
+
+        if tb_logger is not None:
+            tb_logger.save_losses(validation_losses, epoch)
 
         utils.log_progress(validation_losses)
         logging.info('-' * 40)
