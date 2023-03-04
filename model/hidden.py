@@ -10,7 +10,7 @@ from noise_layers.noiser import Noiser
 
 
 class Hidden:
-    def __init__(self, configuration: HiDDenConfiguration, device: torch.device, noiser: Noiser, tb_logger):
+    def __init__(self, configuration: HiDDenConfiguration, device: torch.device, noiser: Noiser, tb_logger_train, tb_logger_val):
         """
         :param configuration: Configuration for the net, such as the size of the input image, number of channels in the intermediate layers, etc.
         :param device: torch.device object, CPU or GPU
@@ -40,15 +40,19 @@ class Hidden:
         self.cover_label = 1
         self.encoded_label = 0
 
-        self.tb_logger = tb_logger
-        if tb_logger is not None:
+        self.tb_logger_train = tb_logger_train
+        self.tb_logger_val = tb_logger_val
+        if tb_logger_train is not None and tb_logger_val is not None:
             from tensorboard_logger import TensorBoardLogger
             encoder_final = self.encoder_decoder.encoder._modules['final_layer']
-            encoder_final.weight.register_hook(tb_logger.grad_hook_by_name('grads/encoder_out'))
+            encoder_final.weight.register_hook(tb_logger_train.grad_hook_by_name('grads/encoder_out'))
+            encoder_final.weight.register_hook(tb_logger_val.grad_hook_by_name('grads/encoder_out'))
             decoder_final = self.encoder_decoder.decoder._modules['linear']
-            decoder_final.weight.register_hook(tb_logger.grad_hook_by_name('grads/decoder_out'))
+            decoder_final.weight.register_hook(tb_logger_train.grad_hook_by_name('grads/decoder_out'))
+            decoder_final.weight.register_hook(tb_logger_val.grad_hook_by_name('grads/decoder_out'))
             discrim_final = self.discriminator._modules['linear']
-            discrim_final.weight.register_hook(tb_logger.grad_hook_by_name('grads/discrim_out'))
+            discrim_final.weight.register_hook(tb_logger_train.grad_hook_by_name('grads/discrim_out'))
+            discrim_final.weight.register_hook(tb_logger_val.grad_hook_by_name('grads/discrim_out'))
 
 
     def train_on_batch(self, batch: list):
@@ -124,13 +128,16 @@ class Hidden:
         :return: dictionary of error metrics from Encoder, Decoder, and Discriminator on the current batch
         """
         # if TensorboardX logging is enabled, save some of the tensors.
-        if self.tb_logger is not None:
+        if self.tb_logger_train is not None and self.tb_logger_val is not None:
             encoder_final = self.encoder_decoder.encoder._modules['final_layer']
-            self.tb_logger.add_tensor('weights/encoder_out', encoder_final.weight)
+            self.tb_logger_train.add_tensor('weights/encoder_out', encoder_final.weight)
+            self.tb_logger_val.add_tensor('weights/encoder_out', encoder_final.weight)
             decoder_final = self.encoder_decoder.decoder._modules['linear']
-            self.tb_logger.add_tensor('weights/decoder_out', decoder_final.weight)
+            self.tb_logger_train.add_tensor('weights/decoder_out', decoder_final.weight)
+            self.tb_logger_val.add_tensor('weights/decoder_out', decoder_final.weight)
             discrim_final = self.discriminator._modules['linear']
-            self.tb_logger.add_tensor('weights/discrim_out', discrim_final.weight)
+            self.tb_logger_train.add_tensor('weights/discrim_out', discrim_final.weight)
+            self.tb_logger_val.add_tensor('weights/discrim_out', discrim_final.weight)
 
         images, messages = batch
 

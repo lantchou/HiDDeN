@@ -124,12 +124,14 @@ def main():
             (args.command == 'continue' and os.path.isdir(os.path.join(this_run_folder, 'tb-logs'))):
         logging.info('Tensorboard is enabled. Creating logger.')
         from tensorboard_logger import TensorBoardLogger
-        tb_logger = TensorBoardLogger(os.path.join(this_run_folder, 'tb-logs'))
+        tb_logger_train = TensorBoardLogger(os.path.join(this_run_folder, 'tb-logs/train'))
+        tb_logger_val = TensorBoardLogger(os.path.join(this_run_folder, 'tb-logs/val'))
     else:
-        tb_logger = None
+        tb_logger_train = None
+        tb_logger_val = None
 
     noiser = Noiser(noise_config, device)
-    model = Hidden(hidden_config, device, noiser, tb_logger)
+    model = Hidden(hidden_config, device, noiser, tb_logger_train, tb_logger_val)
 
     if args.command == 'continue':
         # if we are continuing, we have to load the model params
@@ -145,7 +147,7 @@ def main():
     logging.info('\nTraining train_options:\n')
     logging.info(pprint.pformat(vars(train_options)))
 
-    train(model, device, hidden_config, train_options, this_run_folder, tb_logger)
+    train(model, device, hidden_config, train_options, this_run_folder, tb_logger_train, tb_logger_val)
 
 
 if __name__ == '__main__':

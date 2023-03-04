@@ -2,6 +2,7 @@ import os
 import time
 import torch
 import numpy as np
+from tensorboard_logger import TensorBoardLogger
 import utils
 import logging
 from collections import defaultdict
@@ -16,7 +17,8 @@ def train(model: Hidden,
           hidden_config: HiDDenConfiguration,
           train_options: TrainingOptions,
           this_run_folder: str,
-          tb_logger):
+          tb_logger_train: TensorBoardLogger | None,
+          tb_logger_val: TensorBoardLogger | None):
     """
     Trains the HiDDeN model
     :param model: The model
@@ -24,8 +26,10 @@ def train(model: Hidden,
     :param hidden_config: The network configuration
     :param train_options: The training settings
     :param this_run_folder: The parent folder for the current training run to store training artifacts/results/logs.
-    :param tb_logger: TensorBoardLogger object which is a thin wrapper for TensorboardX logger.
-                Pass None to disable TensorboardX logging
+    :param tb_logger_train: TensorBoardLogger object which is a thin wrapper for TensorboardX logger. Logs training losses.
+        Pass None to disable TensorboardX logging
+    :param tb_logger_val: TensorBoardLogger object which is a thin wrapper for TensorboardX logger. Logs validation losses.
+        Pass None to disable TensorboardX logging
     :return:
     """
 
@@ -64,10 +68,10 @@ def train(model: Hidden,
         logging.info('Epoch {} training duration {:.2f} sec'.format(epoch, train_duration))
         logging.info('-' * 40)
         utils.write_losses(os.path.join(this_run_folder, 'train.csv'), training_losses, epoch, train_duration)
-        if tb_logger is not None:
-            tb_logger.save_losses(training_losses, epoch)
-            tb_logger.save_grads(epoch)
-            tb_logger.save_tensors(epoch)
+        if tb_logger_train is not None:
+            tb_logger_train.save_losses(training_losses, epoch)
+            tb_logger_train.save_grads(epoch)
+            tb_logger_train.save_tensors(epoch)
 
         first_iteration = True
         validation_losses = defaultdict(AverageMeter)
@@ -77,7 +81,7 @@ def train(model: Hidden,
             message = torch.Tensor(np.random.choice([0, 1], (image.shape[0], hidden_config.message_length))).to(device)
             losses, (encoded_images, noised_images, decoded_messages) = model.validate_on_batch([image, message])
             for name, loss in losses.items():
-                validation_losses[name + "_val"].update(loss)
+                validation_losses[name].update(loss)
             if first_iteration:
                 if hidden_config.enable_fp16:
                     image = image.float()
@@ -88,8 +92,10 @@ def train(model: Hidden,
                                   os.path.join(this_run_folder, 'images'), resize_to=saved_images_size)
                 first_iteration = False
 
-        if tb_logger is not None:
-            tb_logger.save_losses(validation_losses, epoch)
+        if tb_logger_val is not None:
+            tb_logger_val.save_losses(validation_losses, epoch)
+            tb_logger_val.save_grads(epoch)
+            tb_logger_val.save_tensors(epoch)
 
         utils.log_progress(validation_losses)
         logging.info('-' * 40)
