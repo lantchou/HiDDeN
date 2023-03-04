@@ -165,7 +165,7 @@ def create_folder_for_run(runs_folder, experiment_name):
     if not os.path.exists(runs_folder):
         os.makedirs(runs_folder)
 
-    this_run_folder = os.path.join(runs_folder, f'{experiment_name} {time.strftime("%Y.%m.%d--%H-%M-%S")}')
+    this_run_folder = os.path.join(runs_folder, f'{experiment_name}-{time.strftime("%Y.%m.%d--%H-%M-%S")}')
 
     os.makedirs(this_run_folder)
     os.makedirs(os.path.join(this_run_folder, 'checkpoints'))
