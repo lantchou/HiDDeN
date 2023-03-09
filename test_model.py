@@ -40,16 +40,17 @@ def main():
     parser.add_argument('--image-folder', '-i', required=True, type=str,
                         help='Folder with test images')
     parser.add_argument('--image-size', '-s', type=int, default=128, help='Image size')
+    parser.add_argument('--test-size', '-t', type=int, default=len(os.listdir(TEST_IMAGES_FOLDER)), help='Test size')
     parser.add_argument('--resize', '-r', action=argparse.BooleanOptionalAction, default=False, help='Resize if true, else crop')
     args = parser.parse_args()
 
     hidden_net, hidden_config = load_model(args.options_file, args.checkpoint_file, device)
 
-    images = load_test_images(args.image_size, device, args.resize)
-    image_count = images.shape[0]
+    test_size = args.test_size
+    images = load_test_images(args.image_size, device, args.resize, test_size)
 
     messages = np.random.choice([0, 1],
-                                (image_count, hidden_config.message_length))
+                                (test_size, hidden_config.message_length))
     messages = torch.Tensor(messages).to(device)
 
     ssim = StructuralSimilarityIndexMeasure(data_range=2)
@@ -57,8 +58,8 @@ def main():
     encoded_images = []
     error_count = 0
     ssim_sum = 0
-    for i in range(0, image_count, args.batch_size):
-        end = min(i + args.batch_size, image_count)
+    for i in range(0, test_size, args.batch_size):
+        end = min(i + args.batch_size, test_size)
         batch_imgs = images[i:end]
         batch_msgs = messages[i:end]
         _, (batch_imgs_enc, _, batch_msgs_dec) = hidden_net.validate_on_batch([batch_imgs, batch_msgs])
@@ -72,14 +73,14 @@ def main():
         batch_msgs_dec_rounded = batch_msgs_dec.detach().cpu().numpy().round().clip(0, 1)
         error_count += np.sum(np.abs(batch_msgs_dec_rounded - batch_msgs_detached))
 
-    ssim_avg = ssim_sum / math.ceil(image_count / args.batch_size)
-    print(f"Average SSIM: {ssim_avg:.5f}")
+    ssim_avg = ssim_sum / math.ceil(test_size / args.batch_size)
+    print(f"Average SSIM = {ssim_avg:.5f}")
 
-    error_avg = error_count / (image_count * hidden_config.message_length)
-    print(f'Average bit error: {error_avg:.3f}')
+    error_avg = error_count / (test_size * hidden_config.message_length)
+    print(f'Average bit error = {error_avg:.5f}')
 
     encoded_images = torch.cat(encoded_images).cpu()
-    random_indeces = np.random.choice(image_count, 8)
+    random_indeces = np.random.choice(test_size, min(test_size, 8))
     utils.save_images(images[random_indeces].cpu(),
                       encoded_images[random_indeces],
                       'test',
@@ -91,15 +92,18 @@ def load_model(options_file, checkpoint_file, device):
     noiser = Noiser(noise_config, device)
 
     checkpoint = torch.load(checkpoint_file, device)
-    hidden_net = Hidden(hidden_config, device, noiser, None)
+    hidden_net = Hidden(hidden_config, device, noiser, None, None)
     utils.model_from_checkpoint(hidden_net, checkpoint)
 
     return hidden_net, hidden_config
 
 
-def load_test_images(img_size, device, resize=True):
+def load_test_images(img_size, device, resize=True, size=1000):
     images = []
-    for item in os.listdir(TEST_IMAGES_FOLDER):
+    for index, item in enumerate(os.listdir(TEST_IMAGES_FOLDER)):
+        if index == size:
+            break
+
         path = TEST_IMAGES_FOLDER + item
         if os.path.isfile(path):
             img = Image.open(path).convert("RGB")
@@ -116,7 +120,8 @@ def load_test_images(img_size, device, resize=True):
             img.close()
             images.append(TF.to_tensor(np_img).unsqueeze_(0))
 
-    # image_tensor = torch.Tensor(images)
+    print(f"Loaded in {len(images)} testing images")
+
     images_tensor = torch.cat(images).to(device)
     images_tensor = images_tensor * 2 - 1  # transform from [0, 1] to [-1, 1]
     return images_tensor
