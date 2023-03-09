@@ -88,7 +88,7 @@ def train(model: Hidden,
                     encoded_images = encoded_images.float()
                 utils.save_images(image.cpu()[:images_to_save, :, :, :],
                                   encoded_images[:images_to_save, :, :, :].cpu(),
-                                  epoch,
+                                  f"epoch-{epoch}.png",
                                   os.path.join(this_run_folder, 'images'), resize_to=saved_images_size)
                 first_iteration = False
 

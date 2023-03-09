@@ -40,7 +40,7 @@ def tensor_to_image(tensor):
     return np.clip(image, 0, 255).astype(np.uint8)
 
 
-def save_images(original_images, watermarked_images, epoch, folder, resize_to=None):
+def save_images(original_images, watermarked_images, filename, folder, resize_to=None):
     images = original_images[:original_images.shape[0], :, :, :].cpu()
     watermarked_images = watermarked_images[:watermarked_images.shape[0], :, :, :].cpu()
 
@@ -53,8 +53,8 @@ def save_images(original_images, watermarked_images, epoch, folder, resize_to=No
         watermarked_images = F.interpolate(watermarked_images, size=resize_to)
 
     stacked_images = torch.cat([images, watermarked_images], dim=0)
-    filename = os.path.join(folder, 'epoch-{}.png'.format(epoch))
-    torchvision.utils.save_image(stacked_images, filename)
+    path = os.path.join(folder, filename)
+    torchvision.utils.save_image(stacked_images, path)
 
 
 def sorted_nicely(l):
