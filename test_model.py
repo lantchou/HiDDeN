@@ -44,7 +44,7 @@ def main():
     parser.add_argument('--resize', '-r', action=argparse.BooleanOptionalAction, default=False, help='Resize if true, else crop')
     args = parser.parse_args()
 
-    hidden_net, hidden_config = load_model(args.options_file, args.checkpoint_file, device)
+    hidden_net, hidden_config, train_options = load_model(args.options_file, args.checkpoint_file, device)
 
     test_size = args.test_size
     images = load_test_images(args.image_size, device, args.resize, test_size)
@@ -83,19 +83,18 @@ def main():
     random_indeces = np.random.choice(test_size, min(test_size, 8))
     utils.save_images(images[random_indeces].cpu(),
                       encoded_images[random_indeces],
-                      'test',
+                      f'{train_options.experiment_name}-{args.image_size}-{"resize" if args.resize else "crop"}.png',
                       '.')
 
-
 def load_model(options_file, checkpoint_file, device):
-    _, hidden_config, noise_config = utils.load_options(options_file)
+    train_options, hidden_config, noise_config = utils.load_options(options_file)
     noiser = Noiser(noise_config, device)
 
     checkpoint = torch.load(checkpoint_file, device)
     hidden_net = Hidden(hidden_config, device, noiser, None, None)
     utils.model_from_checkpoint(hidden_net, checkpoint)
 
-    return hidden_net, hidden_config
+    return hidden_net, hidden_config, train_options
 
 
 def load_test_images(img_size, device, resize=True, size=1000):
