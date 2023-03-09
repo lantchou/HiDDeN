@@ -44,3 +44,6 @@ venv/
 
 # OSX specific
 .DS_Store
+
+# images
+*.png
