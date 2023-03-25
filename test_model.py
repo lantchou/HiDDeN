@@ -1,10 +1,11 @@
+import argparse
+import os
+import csv
+import math
+import numpy as np
 import torch
 import torch.nn
 from torchmetrics import StructuralSimilarityIndexMeasure
-import argparse
-import os
-import numpy as np
-import math
 from PIL import Image
 import torchvision.transforms.functional as TF
 import utils
@@ -59,32 +60,11 @@ def main():
                                 (test_size, hidden_config.message_length))
     messages = torch.Tensor(messages).to(device)
 
-    ssim = StructuralSimilarityIndexMeasure(data_range=2)
+    encoded_images, ssim_avg, error_avg = save_results(
+        images, messages, hidden_net, args, hidden_config.message_length,
+        train_options.experiment_name)
 
-    encoded_images = []
-    error_count = 0
-    ssim_sum = 0
-    for i in range(0, test_size, args.batch_size):
-        end = min(i + args.batch_size, test_size)
-        batch_imgs = images[i:end]
-        batch_msgs = messages[i:end]
-        _, (batch_imgs_enc, _, batch_msgs_dec) = hidden_net.validate_on_batch(
-            [batch_imgs, batch_msgs])
-
-        ssim_sum += ssim(batch_imgs_enc.cpu(), batch_imgs.cpu())
-
-        for img in batch_imgs_enc:
-            encoded_images.append(img.unsqueeze_(0))
-
-        batch_msgs_detached = batch_msgs.detach().cpu().numpy()
-        batch_msgs_dec_rounded = batch_msgs_dec.detach().cpu().numpy().round().clip(0, 1)
-        error_count += np.sum(np.abs(batch_msgs_dec_rounded -
-                              batch_msgs_detached))
-
-    ssim_avg = ssim_sum / math.ceil(test_size / args.batch_size)
     print(f"Average SSIM = {ssim_avg:.5f}")
-
-    error_avg = error_count / (test_size * hidden_config.message_length)
     print(f'Average bit error = {error_avg:.5f}')
 
     encoded_images = torch.cat(encoded_images).cpu()
@@ -134,6 +114,40 @@ def load_test_images(img_size, device, resize=True, size=1000):
     images_tensor = torch.cat(images).to(device)
     images_tensor = images_tensor * 2 - 1  # transform from [0, 1] to [-1, 1]
     return images_tensor
+
+
+def save_results(images, messages, hidden_net, args, message_length, experiment_name):
+    csv_filename = f'{experiment_name}-{args.image_size}-{"resize" if args.resize else "crop"}.csv'
+    with open(csv_filename, "w", encoding="UTF8", newline="") as f:
+        writer = csv.writer(f)
+        ssim = StructuralSimilarityIndexMeasure(data_range=2)
+        encoded_images = []
+        error_count = 0
+        ssim_sum = 0
+        for i in range(0, args.test_size, args.batch_size):
+            end = min(i + args.batch_size, args.test_size)
+            batch_imgs = images[i:end]
+            batch_msgs = messages[i:end]
+            _, (batch_imgs_enc, _, batch_msgs_dec) = hidden_net.validate_on_batch(
+                [batch_imgs, batch_msgs])
+
+            for img, enc_img, msg, msg_dec in \
+                    zip(batch_imgs, batch_imgs_enc, batch_msgs, batch_msgs_dec):
+                encoded_images.append(enc_img)
+
+                img_ssim = ssim(enc_img.unsqueeze_(0).cpu(), img.unsqueeze_(0).cpu())
+                ssim_sum += img_ssim
+
+                msg_detached = msg.detach().cpu().numpy()
+                msg_dec_rounded = msg_dec.detach().cpu().numpy().round().clip(0, 1)
+                msg_error_count = np.sum(np.abs(msg_dec_rounded - msg_detached))
+                error_count += msg_error_count
+
+                writer.writerow([img_ssim.item(), msg_error_count])
+
+        ssim_avg = ssim_sum / args.test_size
+        error_avg = error_count / (args.test_size * message_length)
+        return encoded_images, ssim_avg, error_avg
 
 
 if __name__ == '__main__':
