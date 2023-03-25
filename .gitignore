@@ -47,3 +47,6 @@ venv/
 
 # images
 *.png
+
+# csv
+*.csv
