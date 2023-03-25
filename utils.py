@@ -1,11 +1,10 @@
-import numpy as np
 import os
 import re
 import csv
 import time
 import pickle
 import logging
-
+import numpy as np
 import torch
 from torchvision import datasets, transforms
 import torchvision.utils
@@ -14,6 +13,9 @@ import torch.nn.functional as F
 
 from options import HiDDenConfiguration, TrainingOptions
 from model.hidden import Hidden
+
+from noise_layers.jpeg_compression import rgb2yuv
+from noise_layers.jpeg_compression import yuv2rgb
 
 
 def image_to_tensor(image):
@@ -41,8 +43,20 @@ def tensor_to_image(tensor):
 
 
 def save_images(original_images, watermarked_images, filename, folder, resize_to=None):
-    images = original_images[:original_images.shape[0], :, :, :].cpu()
-    watermarked_images = watermarked_images[:watermarked_images.shape[0], :, :, :].cpu()
+    n, _, w, h = original_images.shape
+    images = original_images[:n, :, :, :].cpu()
+    watermarked_images = watermarked_images[:n, :, :, :].cpu()
+
+    images_yuv = torch.empty_like(images)
+    watermarked_images_yuv = torch.empty_like(watermarked_images)
+    rgb2yuv(images, images_yuv)
+    rgb2yuv(watermarked_images, watermarked_images_yuv)
+    diffs = (torch.abs(images_yuv - watermarked_images_yuv) / 2) * 255
+    diffs[:, 1] = torch.zeros((w, h))
+    diffs[:, 2] = torch.zeros((w, h))
+    diffs = (diffs ** 2).clip(0, 255)
+    diffs = (diffs / 255)
+    yuv2rgb(diffs, diffs)
 
     # scale values to range [0, 1] from original range of [-1, 1]
     images = (images + 1) / 2
@@ -52,7 +66,7 @@ def save_images(original_images, watermarked_images, filename, folder, resize_to
         images = F.interpolate(images, size=resize_to)
         watermarked_images = F.interpolate(watermarked_images, size=resize_to)
 
-    stacked_images = torch.cat([images, watermarked_images], dim=0)
+    stacked_images = torch.cat([images, watermarked_images, diffs], dim=0)
     path = os.path.join(folder, filename)
     torchvision.utils.save_image(stacked_images, path)
 
@@ -183,3 +197,4 @@ def write_losses(file_name, losses_accu, epoch, duration):
         row_to_write = [epoch] + ['{:.4f}'.format(loss_avg.avg) for loss_avg in losses_accu.values()] + [
             '{:.0f}'.format(duration)]
         writer.writerow(row_to_write)
+
