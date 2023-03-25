@@ -35,16 +35,22 @@ def main():
     parser = argparse.ArgumentParser(description='Test trained models')
     parser.add_argument('--options-file', '-o', default='options-and-config.pickle', type=str,
                         help='The file where the simulation options are stored.')
-    parser.add_argument('--checkpoint-file', '-c', required=True, type=str, help='Model checkpoint file')
-    parser.add_argument('--batch-size', '-b', default=12, type=int, help='The batch size.')
+    parser.add_argument('--checkpoint-file', '-c', required=True,
+                        type=str, help='Model checkpoint file')
+    parser.add_argument('--batch-size', '-b', default=12,
+                        type=int, help='The batch size.')
     parser.add_argument('--image-folder', '-i', required=True, type=str,
                         help='Folder with test images')
-    parser.add_argument('--image-size', '-s', type=int, default=128, help='Image size')
-    parser.add_argument('--test-size', '-t', type=int, default=len(os.listdir(TEST_IMAGES_FOLDER)), help='Test size')
-    parser.add_argument('--resize', '-r', action=argparse.BooleanOptionalAction, default=False, help='Resize if true, else crop')
+    parser.add_argument('--image-size', '-s', type=int,
+                        default=128, help='Image size')
+    parser.add_argument('--test-size', '-t', type=int,
+                        default=len(os.listdir(TEST_IMAGES_FOLDER)), help='Test size')
+    parser.add_argument('--resize', '-r', action=argparse.BooleanOptionalAction,
+                        default=False, help='Resize if true, else crop')
     args = parser.parse_args()
 
-    hidden_net, hidden_config, train_options = load_model(args.options_file, args.checkpoint_file, device)
+    hidden_net, hidden_config, train_options = load_model(
+        args.options_file, args.checkpoint_file, device)
 
     test_size = args.test_size
     images = load_test_images(args.image_size, device, args.resize, test_size)
@@ -54,7 +60,7 @@ def main():
     messages = torch.Tensor(messages).to(device)
 
     ssim = StructuralSimilarityIndexMeasure(data_range=2)
-    
+
     encoded_images = []
     error_count = 0
     ssim_sum = 0
@@ -62,7 +68,8 @@ def main():
         end = min(i + args.batch_size, test_size)
         batch_imgs = images[i:end]
         batch_msgs = messages[i:end]
-        _, (batch_imgs_enc, _, batch_msgs_dec) = hidden_net.validate_on_batch([batch_imgs, batch_msgs])
+        _, (batch_imgs_enc, _, batch_msgs_dec) = hidden_net.validate_on_batch(
+            [batch_imgs, batch_msgs])
 
         ssim_sum += ssim(batch_imgs_enc.cpu(), batch_imgs.cpu())
 
@@ -71,7 +78,8 @@ def main():
 
         batch_msgs_detached = batch_msgs.detach().cpu().numpy()
         batch_msgs_dec_rounded = batch_msgs_dec.detach().cpu().numpy().round().clip(0, 1)
-        error_count += np.sum(np.abs(batch_msgs_dec_rounded - batch_msgs_detached))
+        error_count += np.sum(np.abs(batch_msgs_dec_rounded -
+                              batch_msgs_detached))
 
     ssim_avg = ssim_sum / math.ceil(test_size / args.batch_size)
     print(f"Average SSIM = {ssim_avg:.5f}")
@@ -86,8 +94,10 @@ def main():
                       f'{train_options.experiment_name}-{args.image_size}-{"resize" if args.resize else "crop"}.png',
                       '.')
 
+
 def load_model(options_file, checkpoint_file, device):
-    train_options, hidden_config, noise_config = utils.load_options(options_file)
+    train_options, hidden_config, noise_config = utils.load_options(
+        options_file)
     noiser = Noiser(noise_config, device)
 
     checkpoint = torch.load(checkpoint_file, device)
@@ -107,7 +117,7 @@ def load_test_images(img_size, device, resize=True, size=1000):
         if os.path.isfile(path):
             img = Image.open(path).convert("RGB")
             if resize:
-                img = img.resize((img_size, img_size)) 
+                img = img.resize((img_size, img_size))
                 np_img = np.array(img)
             else:
                 # crop instead of resizing
@@ -115,7 +125,7 @@ def load_test_images(img_size, device, resize=True, size=1000):
                     img.close()
                     continue
                 np_img = np.array(img)
-                np_img = np_img[:img_size,:img_size]
+                np_img = np_img[:img_size, :img_size]
             img.close()
             images.append(TF.to_tensor(np_img).unsqueeze_(0))
 
@@ -124,6 +134,7 @@ def load_test_images(img_size, device, resize=True, size=1000):
     images_tensor = torch.cat(images).to(device)
     images_tensor = images_tensor * 2 - 1  # transform from [0, 1] to [-1, 1]
     return images_tensor
+
 
 if __name__ == '__main__':
     main()
