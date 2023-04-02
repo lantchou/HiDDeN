@@ -4,16 +4,14 @@ import csv
 import numpy as np
 import torch
 import torch.nn
-from torchmetrics import StructuralSimilarityIndexMeasure
+from torchmetrics.image.ssim import StructuralSimilarityIndexMeasure
 from PIL import Image
 import torchvision.transforms.functional as TF
 import utils
 from model.hidden import *
 from noise_layers.noiser import Noiser
 
-
 TEST_IMAGES_FOLDER = "../data/test/"
-
 
 
 def main():
@@ -45,14 +43,15 @@ def main():
         args.options_file, args.checkpoint_file, device)
 
     test_size = args.test_size
-    images = load_test_images(args.image_size, device, args.resize, test_size)
+    images, filenames = load_test_images(
+        args.image_size, device, args.resize, test_size)
 
     messages = np.random.choice([0, 1],
                                 (test_size, hidden_config.message_length))
     messages = torch.Tensor(messages).to(device)
 
     encoded_images, ssim_avg, error_avg = save_results(
-        images, messages, hidden_net, args, hidden_config.message_length,
+        images, filenames, messages, hidden_net, args, hidden_config.message_length,
         train_options.experiment_name)
 
     print(f"Average SSIM = {ssim_avg:.5f}")
@@ -80,11 +79,13 @@ def load_model(options_file, checkpoint_file, device):
 
 def load_test_images(img_size, device, resize=True, size=1000):
     images = []
-    for index, item in enumerate(os.listdir(TEST_IMAGES_FOLDER)):
+    filenames = []
+    for index, item in enumerate(sorted(os.listdir(TEST_IMAGES_FOLDER))):
         if index == size:
             break
 
         path = TEST_IMAGES_FOLDER + item
+        filenames.append(item)
         if os.path.isfile(path):
             img = Image.open(path).convert("RGB")
             if resize:
@@ -104,7 +105,7 @@ def load_test_images(img_size, device, resize=True, size=1000):
 
     images_tensor = torch.cat(images).to(device)
     images_tensor = images_tensor * 2 - 1  # transform from [0, 1] to [-1, 1]
-    return images_tensor
+    return images_tensor, filenames
 
 
 def random_crop(img, width, height):
@@ -118,11 +119,11 @@ def random_crop(img, width, height):
     return img
 
 
-def save_results(images, messages, hidden_net, args, message_length, experiment_name):
+def save_results(images, filenames, messages, hidden_net, args, message_length, experiment_name):
     csv_filename = f'{experiment_name}-{args.image_size}-{"resize" if args.resize else "crop"}.csv'
     with open(csv_filename, "w", encoding="UTF8", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["SSIM", "Bit error rate"])  # header
+        writer.writerow(["Image", "SSIM", "Bit error rate"])  # header
 
         ssim = StructuralSimilarityIndexMeasure(data_range=2)
         encoded_images = []
@@ -135,20 +136,25 @@ def save_results(images, messages, hidden_net, args, message_length, experiment_
             _, (batch_imgs_enc, _, batch_msgs_dec) = hidden_net.validate_on_batch(
                 [batch_imgs, batch_msgs])
 
+            j = 0
             for img, enc_img, msg, msg_dec in \
                     zip(batch_imgs, batch_imgs_enc, batch_msgs, batch_msgs_dec):
                 encoded_images.append(enc_img)
 
-                img_ssim = ssim(enc_img.unsqueeze_(0).cpu(), img.unsqueeze_(0).cpu())
+                img_ssim = ssim(enc_img.unsqueeze_(
+                    0).cpu(), img.unsqueeze_(0).cpu())
                 ssim_sum += img_ssim
 
                 msg_detached = msg.detach().cpu().numpy()
                 msg_dec_rounded = msg_dec.detach().cpu().numpy().round().clip(0, 1)
-                msg_error_count = np.sum(np.abs(msg_dec_rounded - msg_detached))
+                msg_error_count = np.sum(
+                    np.abs(msg_dec_rounded - msg_detached))
                 msg_error_rate = msg_error_count / message_length
                 error_count += msg_error_count
 
-                writer.writerow([img_ssim.item(), msg_error_rate])
+                writer.writerow(
+                    [filenames[i + j], img_ssim.item(), msg_error_rate])
+                j += 1
 
         ssim_avg = ssim_sum / args.test_size
         error_avg = error_count / (args.test_size * message_length)
