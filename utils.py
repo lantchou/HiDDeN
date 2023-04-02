@@ -8,7 +8,7 @@ import numpy as np
 import torch
 from torchvision import datasets, transforms
 import torchvision.utils
-from torch.utils import data
+import torch.utils.data
 import torch.nn.functional as F
 
 from options import HiDDenConfiguration, TrainingOptions
