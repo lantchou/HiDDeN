@@ -1,3 +1,4 @@
+from typing import List
 import numpy as np
 import torch.nn as nn
 from noise_layers.identity import Identity
@@ -12,7 +13,7 @@ class Noiser(nn.Module):
     """
     def __init__(self, noise_layers: list, device):
         super(Noiser, self).__init__()
-        self.noise_layers = [Identity()]
+        self.noise_layers: List[nn.Module] = [Identity()]
         for layer in noise_layers:
             if type(layer) is str:
                 if layer == 'JpegPlaceholder':

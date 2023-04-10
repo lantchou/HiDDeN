@@ -13,12 +13,13 @@ class EncoderDecoder(nn.Module):
     to the Decoder which tries to recover the watermark (called decoded_message). The module outputs
     a three-tuple: (encoded_image, noised_image, decoded_message)
     """
-    def __init__(self, config: HiDDenConfiguration, noiser: Noiser):
+
+    def __init__(self, config: HiDDenConfiguration, encoder: Encoder, decoder: Decoder, noiser: Noiser):
         super(EncoderDecoder, self).__init__()
-        self.encoder = Encoder(config)
+        self.encoder = encoder
+        self.decoder = decoder
         self.noiser = noiser
         self.config = config
-        self.decoder = Decoder(config)
 
     def forward(self, image, message):
         encoded_image = self.encoder(image, message)
