@@ -16,6 +16,7 @@ from model.hidden import Hidden
 
 from noise_layers.jpeg_compression import rgb2yuv
 from noise_layers.jpeg_compression import yuv2rgb
+from noise_layers.noiser import Noiser
 
 
 def image_to_tensor(image):
@@ -197,4 +198,16 @@ def write_losses(file_name, losses_accu, epoch, duration):
         row_to_write = [epoch] + ['{:.4f}'.format(loss_avg.avg) for loss_avg in losses_accu.values()] + [
             '{:.0f}'.format(duration)]
         writer.writerow(row_to_write)
+
+
+def load_model(options_file, checkpoint_file, device):
+    train_options, hidden_config, noise_config = load_options(
+        options_file)
+    noiser = Noiser(noise_config, device)
+
+    checkpoint = torch.load(checkpoint_file, device)
+    hidden_net = Hidden(hidden_config, device, noiser, None, None)
+    model_from_checkpoint(hidden_net, checkpoint)
+
+    return hidden_net, hidden_config, train_options
 
