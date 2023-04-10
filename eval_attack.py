@@ -117,7 +117,7 @@ def save_images(images, filenames, folder):
     os.makedirs(folder)
     for img, filename in zip(images, filenames):
         path = os.path.join(folder, filename)
-        img = (img + 1) / 2
+        img = (img + 1) / 2  # restore to [0, 1] range
         save_image(img, path)
 
 
