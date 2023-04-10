@@ -9,7 +9,6 @@ from PIL import Image
 import torchvision.transforms.functional as TF
 import utils
 from model.hidden import *
-from noise_layers.noiser import Noiser
 
 TEST_IMAGES_FOLDER = "../data/test/"
 
@@ -39,20 +38,21 @@ def main():
                         default=False, help='Resize if true, else crop')
     args = parser.parse_args()
 
-    hidden_net, hidden_config, train_options = load_model(
+    hidden_net, hidden_config, train_options = utils.load_model(
         args.options_file, args.checkpoint_file, device)
 
-    test_size = args.test_size
     images, filenames = load_test_images(
-        args.image_size, device, args.resize, test_size)
+        args.image_size, device, args.test_size, args.resize)
+    test_size = len(images)
 
     messages = np.random.choice([0, 1],
                                 (test_size, hidden_config.message_length))
     messages = torch.Tensor(messages).to(device)
 
+    ssim = StructuralSimilarityIndexMeasure(data_range=2).to(device)
     encoded_images, ssim_avg, error_avg = save_results(
         images, filenames, messages, hidden_net, args, hidden_config.message_length,
-        train_options.experiment_name)
+        train_options.experiment_name, ssim)
 
     print(f"Average SSIM = {ssim_avg:.5f}")
     print(f'Average bit error = {error_avg:.5f}')
@@ -65,23 +65,11 @@ def main():
                       '.')
 
 
-def load_model(options_file, checkpoint_file, device):
-    train_options, hidden_config, noise_config = utils.load_options(
-        options_file)
-    noiser = Noiser(noise_config, device)
-
-    checkpoint = torch.load(checkpoint_file, device)
-    hidden_net = Hidden(hidden_config, device, noiser, None, None)
-    utils.model_from_checkpoint(hidden_net, checkpoint)
-
-    return hidden_net, hidden_config, train_options
-
-
-def load_test_images(img_size, device, resize=True, size=1000):
+def load_test_images(img_size, device, size, resize=True):
     images = []
     filenames = []
-    for index, item in enumerate(sorted(os.listdir(TEST_IMAGES_FOLDER))):
-        if index == size:
+    for item in sorted(os.listdir(TEST_IMAGES_FOLDER)):
+        if len(images) == size:
             break
 
         path = TEST_IMAGES_FOLDER + item
@@ -113,28 +101,29 @@ def random_crop(img, width, height):
     img = np.array(img)
     assert img_width >= width
     assert img_height >= height
-    x_start = np.random.randint(0, img_width - width)
-    y_start = np.random.randint(0, img_height - height)
+    x_start = 0 if img_width == width else np.random.randint(0, img_width - width)
+    y_start = 0 if img_height == height else np.random.randint(0, img_height - height)
     img = img[y_start:y_start+height, x_start:x_start+width, :]
     return img
 
 
-def save_results(images, filenames, messages, hidden_net, args, message_length, experiment_name):
+def save_results(images, filenames, messages, hidden_net, args, message_length, experiment_name, ssim):
     csv_filename = f'{experiment_name}-{args.image_size}-{"resize" if args.resize else "crop"}.csv'
+    image_count = images.shape[0]
     with open(csv_filename, "w", encoding="UTF8", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["Image", "SSIM", "Bit error rate"])  # header
 
-        ssim = StructuralSimilarityIndexMeasure(data_range=2)
         encoded_images = []
         error_count = 0
         ssim_sum = 0
-        for i in range(0, args.test_size, args.batch_size):
-            end = min(i + args.batch_size, args.test_size)
+        for i in range(0, image_count, args.batch_size):
+            end = min(i + args.batch_size, image_count)
             batch_imgs = images[i:end]
             batch_msgs = messages[i:end]
-            _, (batch_imgs_enc, _, batch_msgs_dec) = hidden_net.validate_on_batch(
-                [batch_imgs, batch_msgs])
+            batch_imgs_enc = hidden_net.eval_encode_on_batch(
+                batch_imgs, batch_msgs)
+            batch_msgs_dec = hidden_net.eval_decode_on_batch(batch_imgs_enc)
 
             j = 0
             for img, enc_img, msg, msg_dec in \
@@ -142,7 +131,7 @@ def save_results(images, filenames, messages, hidden_net, args, message_length, 
                 encoded_images.append(enc_img)
 
                 img_ssim = ssim(enc_img.unsqueeze_(
-                    0).cpu(), img.unsqueeze_(0).cpu())
+                    0), img.unsqueeze_(0))
                 ssim_sum += img_ssim
 
                 msg_detached = msg.detach().cpu().numpy()
@@ -156,8 +145,8 @@ def save_results(images, filenames, messages, hidden_net, args, message_length, 
                     [filenames[i + j], img_ssim.item(), msg_error_rate])
                 j += 1
 
-        ssim_avg = ssim_sum / args.test_size
-        error_avg = error_count / (args.test_size * message_length)
+        ssim_avg = ssim_sum / image_count
+        error_avg = error_count / (image_count * message_length)
         return encoded_images, ssim_avg, error_avg
 
 
