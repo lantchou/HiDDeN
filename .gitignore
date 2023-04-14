@@ -45,8 +45,11 @@ venv/
 # OSX specific
 .DS_Store
 
-# images
+# Images
 *.png
 
 # csv
 *.csv
+
+# Test results folder
+test-results/

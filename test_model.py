@@ -11,7 +11,7 @@ import utils
 from model.hidden import *
 
 TEST_IMAGES_FOLDER = "../data/test/"
-
+TEST_RESULTS_FOLDER = "./test-results"
 
 def main():
     if torch.has_mps:
@@ -109,8 +109,11 @@ def random_crop(img, width, height):
 
 def save_results(images, filenames, messages, hidden_net, args, message_length, experiment_name, ssim):
     csv_filename = f'{experiment_name}-{args.image_size}-{"resize" if args.resize else "crop"}.csv'
+    csv_path = os.path.join(TEST_RESULTS_FOLDER, csv_filename)
+    if not os.path.isdir(TEST_RESULTS_FOLDER):
+        os.mkdir(TEST_RESULTS_FOLDER)
     image_count = images.shape[0]
-    with open(csv_filename, "w", encoding="UTF8", newline="") as f:
+    with open(csv_path, "w", encoding="UTF8", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["Image", "SSIM", "Bit error rate"])  # header
 
