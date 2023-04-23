@@ -9,6 +9,7 @@ from torchvision.utils import save_image
 from typing import List, Tuple
 import numpy as np
 import csv
+import math
 
 from model.hidden import Hidden
 from utils import load_model
@@ -65,26 +66,30 @@ def main():
             csv_header.append(f"{angle} degree rotation")
 
             if args.save_images:
-                save_images(attack_images, filenames, os.path.join(results_dir, f"{angle}-degrees"))
+                save_images(attack_images, filenames, os.path.join(
+                    results_dir, f"{angle}-degrees"))
 
             print(f"Results for rotation with degree {angle}")
             print(f"\t Average bit error = {error_avg:.5f}\n")
     elif args.attack == "crop":
-        crop_sizes = [10, 20, 50, 100, 200]
-        for crop_size in crop_sizes:
+        crop_ratios = [0.05, 0.1, 0.2, 0.3, 0.4, 0.45]
+        for crop_ratio in crop_ratios:
+            hcrop = math.floor(width * crop_ratio)
+            vcrop = math.floor(height * crop_ratio)
             error_rates, error_avg, attack_images = eval(images, hidden_net,
                                                          args.batch_size, hidden_config.message_length,
                                                          lambda img: TF.crop(
-                                                             img, crop_size, crop_size, height - crop_size, width - crop_size),
+                                                             img, vcrop, hcrop, height - vcrop * 2, width - hcrop * 2),
                                                          device)
 
             error_rates_all.append(error_rates)
-            csv_header.append(f"Crop of size {crop_size}")
+            csv_header.append(f"Crop of size {hcrop}x{vcrop}")
 
             if args.save_images:
-                save_images(attack_images, filenames, os.path.join(results_dir, f"size-{crop_size}"))
+                save_images(attack_images, filenames, os.path.join(
+                    results_dir, f"size-{hcrop}x{vcrop}"))
 
-            print(f"Results for crop of size {crop_size}")
+            print(f"Results for crop of size {hcrop}x{vcrop}")
             print(f"\t Average bit error = {error_avg:.5f}\n")
     elif args.attack == "identity":
         # identity
@@ -96,7 +101,8 @@ def main():
         error_rates_all.append(error_rates)
 
         if args.save_images:
-            save_images(attack_images, filenames, os.path.join(results_dir, "images"))
+            save_images(attack_images, filenames,
+                        os.path.join(results_dir, "images"))
 
         return  # no csv writing needed
 
