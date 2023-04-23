@@ -10,6 +10,7 @@ from typing import List, Tuple
 import numpy as np
 import csv
 import math
+import io
 
 from model.hidden import Hidden
 from utils import load_model
@@ -52,7 +53,9 @@ def main():
         time.strftime('%Y.%m.%d--%H-%M-%S'))
     os.makedirs(results_dir)
     csv_header = ["Image", "No attack"]
-    error_rates_all: List[List[float]] = []
+    error_rates_no_attack, _, _ = eval(images, hidden_net, args.batch_size,
+                                       hidden_config.message_length, lambda img: img, device)
+    error_rates_all: List[List[float]] = [error_rates_no_attack]
     if args.attack == "rotate":
         angles = [2, 5, 10, 20]
         for angle in angles:
@@ -69,7 +72,7 @@ def main():
                 save_images(attack_images, filenames, os.path.join(
                     results_dir, f"{angle}-degrees"))
 
-            print(f"Results for rotation with degree {angle}")
+            print(f"Results {angle} degree rotation")
             print(f"\t Average bit error = {error_avg:.5f}\n")
     elif args.attack == "crop":
         crop_ratios = [0.05, 0.1, 0.2, 0.3, 0.4, 0.45]
@@ -83,13 +86,31 @@ def main():
                                                          device)
 
             error_rates_all.append(error_rates)
-            csv_header.append(f"Crop of size {hcrop}x{vcrop}")
+            csv_header.append(f"{crop_ratio * 100}% crop")
 
             if args.save_images:
                 save_images(attack_images, filenames, os.path.join(
-                    results_dir, f"size-{hcrop}x{vcrop}"))
+                    results_dir, f"ratio-{crop_ratio}"))
 
-            print(f"Results for crop of size {hcrop}x{vcrop}")
+            print(f"Results for {crop_ratio * 100}% crop")
+            print(f"\t Average bit error = {error_avg:.5f}\n")
+    elif args.attack == "jpeg":
+        qfs = [100, 80, 60, 30, 10]
+        for qf in qfs:
+            error_rates, error_avg, attack_images = eval(images, hidden_net,
+                                                         args.batch_size, hidden_config.message_length,
+                                                         lambda img: jpeg_compress(
+                                                             img, qf, device),
+                                                         device)
+
+            error_rates_all.append(error_rates)
+            csv_header.append(f"QF = {qf}")
+
+            if args.save_images:
+                save_images(attack_images, filenames, os.path.join(
+                    results_dir, f"qf-{qf}"))
+
+            print(f"Results for JPEG compression with QF = {qf}")
             print(f"\t Average bit error = {error_avg:.5f}\n")
     elif args.attack == "identity":
         # identity
@@ -173,6 +194,20 @@ def load_images(folder: str, device) -> Tuple[Tensor, List[str]]:
     images_tensor = torch.cat(images).to(device)
     images_tensor = images_tensor * 2 - 1  # transform from [0, 1] to [-1, 1]
     return images_tensor, filenames
+
+
+def jpeg_compress(images: torch.Tensor, qf: int, device) -> Tensor:
+    jpeg_images = []
+    for image in images:
+        image = (image.clip(-1, 1) + 1) / 2  # to [0, 1] range
+        pil_image: Image.Image = TF.to_pil_image(image, "RGB")
+        out = io.BytesIO()
+        pil_image.save(out, "JPEG", quality=qf)
+        out.seek(0)
+        image_jpeg = TF.to_tensor(Image.open(out)) * 2 - 1  # back to [-1, 1] range
+        jpeg_images.append(image_jpeg.unsqueeze_(0))  # for some reason torchvision.transforms removes a dimension, and adding one again fixes it
+
+    return torch.cat(jpeg_images).to(device)
 
 
 if __name__ == "__main__":
