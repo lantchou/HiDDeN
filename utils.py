@@ -44,17 +44,17 @@ def tensor_to_image(tensor):
 
 
 def save_images(original_images, watermarked_images, filename, folder, resize_to=None):
-    n, _, w, h = original_images.shape
-    images = original_images[:n, :, :, :].cpu()
-    watermarked_images = watermarked_images[:n, :, :, :].cpu()
+    n, _, h, w = original_images.shape
+    images = original_images[:n, :, :, :].clip(-1, 1).cpu()
+    watermarked_images = watermarked_images[:n, :, :, :].clip(-1, 1).cpu()
 
     images_yuv = torch.empty_like(images)
     watermarked_images_yuv = torch.empty_like(watermarked_images)
     rgb2yuv(images, images_yuv)
     rgb2yuv(watermarked_images, watermarked_images_yuv)
     diffs = (torch.abs(images_yuv - watermarked_images_yuv) / 2) * 255
-    diffs[:, 1] = torch.zeros((w, h))
-    diffs[:, 2] = torch.zeros((w, h))
+    diffs[:, 1] = torch.zeros((h, w))
+    diffs[:, 2] = torch.zeros((h, w))
     diffs = (diffs ** 2).clip(0, 255)
     diffs = (diffs / 255)
     yuv2rgb(diffs, diffs)
@@ -66,6 +66,7 @@ def save_images(original_images, watermarked_images, filename, folder, resize_to
     if resize_to is not None:
         images = F.interpolate(images, size=resize_to)
         watermarked_images = F.interpolate(watermarked_images, size=resize_to)
+        diffs = F.interpolate(diffs, size=resize_to)
 
     stacked_images = torch.cat([images, watermarked_images, diffs], dim=0)
     path = os.path.join(folder, filename)

@@ -62,7 +62,7 @@ def main():
     utils.save_images(images[random_indeces].cpu(),
                       encoded_images[random_indeces],
                       f'{train_options.experiment_name}-{args.image_size}-{"resize" if args.resize else "crop"}.png',
-                      '.')
+                      TEST_RESULTS_FOLDER)
 
 
 def load_test_images(img_size, device, size, resize=True):
