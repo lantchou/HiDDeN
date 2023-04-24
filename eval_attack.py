@@ -11,6 +11,7 @@ import numpy as np
 import csv
 import math
 import io
+import random
 
 from model.hidden import Hidden
 from utils import load_model
@@ -59,6 +60,9 @@ def main():
     if args.attack == "rotate":
         angles = [2, 5, 10, 20]
         for angle in angles:
+            # randomly switch sign of angle
+            if random.random() < 0.5:
+                angle = -angle
             error_rates, error_avg, attack_images = eval(images, hidden_net,
                                                          args.batch_size, hidden_config.message_length,
                                                          lambda img: TF.rotate(
