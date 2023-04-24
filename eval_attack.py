@@ -79,14 +79,14 @@ def main():
             print(f"Results {angle} degree rotation")
             print(f"\t Average bit error = {error_avg:.5f}\n")
     elif args.attack == "crop":
-        crop_ratios = [0.05, 0.1, 0.2, 0.3, 0.4, 0.45]
+        crop_ratios = [0.9, 0.7, 0.5, 0.3, 0.1]
         for crop_ratio in crop_ratios:
-            hcrop = math.floor(width * crop_ratio)
-            vcrop = math.floor(height * crop_ratio)
+            crop_width = math.floor(width * crop_ratio)
+            crop_height = math.floor(height * crop_ratio)
             error_rates, error_avg, attack_images = eval(images, hidden_net,
                                                          args.batch_size, hidden_config.message_length,
                                                          lambda img: TF.crop(
-                                                             img, vcrop, hcrop, height - vcrop * 2, width - hcrop * 2),
+                                                             img, height - crop_height, width - crop_width, crop_height, crop_width),
                                                          device)
 
             error_rates_all.append(error_rates)
@@ -162,7 +162,7 @@ def eval(images, hidden_net: Hidden, batch_size, message_length, attack, device)
     error_count = 0
     for i in range(0, image_count, batch_size):
         end = min(i + batch_size, image_count)
-        batch_imgs = images[i:end]
+        batch_imgs = images[i:end].clip(-1, 1)
         batch_msgs = messages[i:end]
         batch_imgs_enc = hidden_net.eval_encode_on_batch(
             batch_imgs, batch_msgs)
