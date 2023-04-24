@@ -99,6 +99,8 @@ class NoiseArgParser(argparse.Action):
                 layers.append('JpegPlaceholder')
             elif command[:len('quant')] == 'quant':
                 layers.append('QuantizationPlaceholder')
+            elif command[:len('rotate')] == 'rotate':
+                layers.append('Rotate')
             elif command[:len('identity')] == 'identity':
                 # We are adding one Identity() layer in Noiser anyway
                 pass

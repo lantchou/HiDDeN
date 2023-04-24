@@ -1,9 +1,10 @@
 from typing import List
 import numpy as np
 import torch.nn as nn
+import torch
 from noise_layers.identity import Identity
 from noise_layers.jpeg_compression import JpegCompression
-from noise_layers.quantization import Quantization
+from noise_layers.rotate import Rotate
 
 
 class Noiser(nn.Module):
@@ -18,11 +19,11 @@ class Noiser(nn.Module):
             if type(layer) is str:
                 if layer == 'JpegPlaceholder':
                     self.noise_layers.append(JpegCompression(device))
-                elif layer == 'QuantizationPlaceholder':
-                    self.noise_layers.append(Quantization(device))
+                elif layer == 'Rotate':
+                    self.noise_layers.append(Rotate(device))
                 else:
                     raise ValueError(f'Wrong layer placeholder string in Noiser.__init__().'
-                                     f' Expected "JpegPlaceholder" or "QuantizationPlaceholder" but got {layer} instead')
+                                     f' Expected "JpegPlaceholder" or "Rotate" but got {layer} instead')
             else:
                 self.noise_layers.append(layer)
         # self.noise_layers = nn.Sequential(*noise_layers)
