@@ -2,10 +2,7 @@ import torch.nn as nn
 import torchvision.transforms.functional as TF
 import random
 
-from noise_layers.crop import random_float
-
 MAX_ROTATION_ANGLE = 20
-
 
 class Rotate(nn.Module):
     """
