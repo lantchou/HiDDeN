@@ -102,7 +102,7 @@ class JpegCompression(nn.Module):
         elif filter_type == 'idct':
             filters = self.idct_conv_weights
         else:
-            raise('Unknown filter_type value.')
+            raise ValueError('Unknown filter_type value.')
 
         image_conv_channels = []
         for channel in range(image.shape[1]):
