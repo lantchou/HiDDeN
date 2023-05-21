@@ -83,10 +83,15 @@ def main():
         for crop_ratio in crop_ratios:
             crop_width = math.floor(width * crop_ratio)
             crop_height = math.floor(height * crop_ratio)
+            crop_top = random.randrange(0, height - crop_height)
+            crop_left = random.randrange(0, width - crop_width)
             error_rates, error_avg, attack_images = eval(images, hidden_net,
                                                          args.batch_size, hidden_config.message_length,
                                                          lambda img: TF.crop(
-                                                             img, height - crop_height, width - crop_width, crop_height,
+                                                             img,
+                                                             crop_top,
+                                                             crop_left,
+                                                             crop_height,
                                                              crop_width),
                                                          device)
 
@@ -128,13 +133,66 @@ def main():
                                                          device)
 
             error_rates_all.append(error_rates)
-            csv_header.append(f"Resize scale = {scale}")
+            csv_header.append(f"Resize with scale = {scale}")
 
             if args.save_images:
                 save_images(attack_images, filenames, os.path.join(
                     results_dir, f"scale-{scale}"))
 
             print(f"Results for resize with scale = {scale}")
+            print(f"\t Average bit error = {error_avg:.5f}\n")
+    elif args.attack == "shear":
+        angles = [2, 5, 10, 15, 20, 30]
+        for angle in angles:
+
+            # randomly flip angle
+            if random.random() < 0.5:
+                angle = -angle
+            error_rates, error_avg, attack_images = eval(images,
+                                                         hidden_net,
+                                                         args.batch_size,
+                                                         hidden_config.message_length,
+                                                         lambda img: TF.affine(img, 0, [0, 0], 1, angle),
+                                                         device)
+
+            error_rates_all.append(error_rates)
+            csv_header.append(f"Shear of scale = {angle}")
+
+            if args.save_images:
+                save_images(attack_images, filenames, os.path.join(
+                    results_dir, f"{angle}-degrees"))
+
+            print(f"Results for shear of angle = {angle}")
+            print(f"\t Average bit error = {error_avg:.5f}\n")
+    elif args.attack == "translate":
+        # distance ratios (images of size [w x h] will be translated with distances [w * dr, h * dr]).
+        drs = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
+        for dr in drs:
+            dx = math.floor(width * dr)
+            dy = math.floor(height * dr)
+
+            # randomly flip distances
+            if random.random() < 0.5:
+                dx = -dx
+
+            if random.random() < 0.5:
+                dy = -dy
+
+            error_rates, error_avg, attack_images = eval(images,
+                                                         hidden_net,
+                                                         args.batch_size,
+                                                         hidden_config.message_length,
+                                                         lambda img: TF.affine(img, 0, [dx, dy], 1, [0, 0]),
+                                                         device)
+
+            error_rates_all.append(error_rates)
+            csv_header.append(f"Translation with ratio = {dr}")
+
+            if args.save_images:
+                save_images(attack_images, filenames, os.path.join(
+                    results_dir, f"ratio-{dr}"))
+
+            print(f"Results for translation with ratio = {dr}")
             print(f"\t Average bit error = {error_avg:.5f}\n")
     elif args.attack == "reflect":
         error_rates, error_avg, attack_images = eval(images, hidden_net,
@@ -151,6 +209,23 @@ def main():
 
         print(f"Results for reflected")
         print(f"\t Average bit error = {error_avg:.5f}\n")
+    elif args.attack == "blur":
+        sigmas = [1, 3, 5, 7, 9]
+        for sigma in sigmas:
+            error_rates, error_avg, attack_images = eval(images, hidden_net,
+                                                         args.batch_size, hidden_config.message_length,
+                                                         lambda img: TF.gaussian_blur(img, [sigma, sigma], [sigma]),
+                                                         device)
+
+            error_rates_all.append(error_rates)
+            csv_header.append(f"Sigma = {sigma}")
+
+            if args.save_images:
+                save_images(attack_images, filenames, os.path.join(
+                    results_dir, f"sigma-{sigma}"))
+
+            print(f"Results for blur with sigma = {sigma}")
+            print(f"\t Average bit error = {error_avg:.5f}\n")
     elif args.attack == "identity":
         # identity
         # TODO do different arg parser flow for this case?
