@@ -14,8 +14,7 @@ class Rotate(nn.Module):
         self.max_rotation_angle = max_rotation_angle
 
     def forward(self, noised_and_cover):
-
-        angle = random.uniform(0, 20)
+        angle = random.uniform(0, self.max_rotation_angle)
         if random.random() < 0.5:
             angle = -angle
 
