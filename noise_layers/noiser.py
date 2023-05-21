@@ -25,8 +25,7 @@ class Noiser(nn.Module):
                 elif layer == 'GaussianBlur':
                     self.noise_layers.append(GaussianBlur())
                 else:
-                    raise ValueError(f'Wrong layer placeholder string in Noiser.__init__().'
-                                     f' Expected "JpegPlaceholder" or "Rotate" but got {layer} instead')
+                    raise ValueError(f'Unknown layer string in Noiser.__init__().')
             else:
                 self.noise_layers.append(layer)
         # self.noise_layers = nn.Sequential(*noise_layers)
