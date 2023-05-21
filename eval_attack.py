@@ -136,6 +136,21 @@ def main():
 
             print(f"Results for resize with scale = {scale}")
             print(f"\t Average bit error = {error_avg:.5f}\n")
+    elif args.attack == "reflect":
+        error_rates, error_avg, attack_images = eval(images, hidden_net,
+                                                     args.batch_size, hidden_config.message_length,
+                                                     lambda img: TF.hflip(img),
+                                                     device)
+
+        error_rates_all.append(error_rates)
+        csv_header.append(f"Reflected")
+
+        if args.save_images:
+            save_images(attack_images, filenames, os.path.join(
+                results_dir, f"reflected"))
+
+        print(f"Results for reflected")
+        print(f"\t Average bit error = {error_avg:.5f}\n")
     elif args.attack == "identity":
         # identity
         # TODO do different arg parser flow for this case?
