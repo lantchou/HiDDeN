@@ -5,6 +5,7 @@ import torch
 from noise_layers.identity import Identity
 from noise_layers.jpeg_compression import JpegCompression
 from noise_layers.rotate import Rotate
+from noise_layers.gaussian_blur import GaussianBlur
 
 
 class Noiser(nn.Module):
@@ -12,7 +13,7 @@ class Noiser(nn.Module):
     This module allows to combine different noise layers into a sequential noise module. The
     configuration and the sequence of the noise layers is controlled by the noise_config parameter.
     """
-    def __init__(self, noise_layers: list, device):
+    def __init__(self, noise_layers: List[nn.Module], device):
         super(Noiser, self).__init__()
         self.noise_layers: List[nn.Module] = [Identity()]
         for layer in noise_layers:
@@ -20,7 +21,9 @@ class Noiser(nn.Module):
                 if layer == 'JpegPlaceholder':
                     self.noise_layers.append(JpegCompression(device))
                 elif layer == 'Rotate':
-                    self.noise_layers.append(Rotate(device))
+                    self.noise_layers.append(Rotate())
+                elif layer == 'GaussianBlur':
+                    self.noise_layers.append(GaussianBlur())
                 else:
                     raise ValueError(f'Wrong layer placeholder string in Noiser.__init__().'
                                      f' Expected "JpegPlaceholder" or "Rotate" but got {layer} instead')
