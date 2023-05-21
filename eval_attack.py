@@ -86,7 +86,8 @@ def main():
             error_rates, error_avg, attack_images = eval(images, hidden_net,
                                                          args.batch_size, hidden_config.message_length,
                                                          lambda img: TF.crop(
-                                                             img, height - crop_height, width - crop_width, crop_height, crop_width),
+                                                             img, height - crop_height, width - crop_width, crop_height,
+                                                             crop_width),
                                                          device)
 
             error_rates_all.append(error_rates)
@@ -99,7 +100,7 @@ def main():
             print(f"Results for {crop_ratio * 100}% crop")
             print(f"\t Average bit error = {error_avg:.5f}\n")
     elif args.attack == "jpeg":
-        qfs = [100, 80, 60, 30, 10]
+        qfs = [100, 80, 60, 40, 20, 10]
         for qf in qfs:
             error_rates, error_avg, attack_images = eval(images, hidden_net,
                                                          args.batch_size, hidden_config.message_length,
@@ -115,6 +116,25 @@ def main():
                     results_dir, f"qf-{qf}"))
 
             print(f"Results for JPEG compression with QF = {qf}")
+            print(f"\t Average bit error = {error_avg:.5f}\n")
+    elif args.attack == "resize":
+        scales = [0.25, 0.5, 0.75, 1.25, 1.5, 1.75, 2]
+        for scale in scales:
+            resize_height = math.floor(height * scale)
+            resize_width = math.floor(width * scale)
+            error_rates, error_avg, attack_images = eval(images, hidden_net,
+                                                         args.batch_size, hidden_config.message_length,
+                                                         lambda img: TF.resize(img, [resize_height, resize_width]),
+                                                         device)
+
+            error_rates_all.append(error_rates)
+            csv_header.append(f"Resize scale = {scale}")
+
+            if args.save_images:
+                save_images(attack_images, filenames, os.path.join(
+                    results_dir, f"scale-{scale}"))
+
+            print(f"Results for resize with scale = {scale}")
             print(f"\t Average bit error = {error_avg:.5f}\n")
     elif args.attack == "identity":
         # identity
@@ -209,7 +229,8 @@ def jpeg_compress(images: torch.Tensor, qf: int, device) -> Tensor:
         pil_image.save(out, "JPEG", quality=qf)
         out.seek(0)
         image_jpeg = TF.to_tensor(Image.open(out)) * 2 - 1  # back to [-1, 1] range
-        jpeg_images.append(image_jpeg.unsqueeze_(0))  # for some reason torchvision.transforms removes a dimension, and adding one again fixes it
+        jpeg_images.append(image_jpeg.unsqueeze_(
+            0))  # for some reason torchvision.transforms removes a dimension, and adding one again fixes it
 
     return torch.cat(jpeg_images).to(device)
 
