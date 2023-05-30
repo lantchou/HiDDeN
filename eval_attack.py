@@ -16,6 +16,7 @@ import random
 from model.hidden import Hidden
 from utils import load_model
 
+AVG_ERROR_RATES_FILENAME = "error-rates-avg.txt"
 
 def main():
     if torch.has_mps:
@@ -52,6 +53,7 @@ def main():
         train_options.experiment_name,
         args.attack,
         time.strftime('%Y.%m.%d--%H-%M-%S'))
+    avg_error_rates_path = os.path.join(results_dir, AVG_ERROR_RATES_FILENAME)
     os.makedirs(results_dir)
     csv_header = ["Image", "No attack"]
     error_rates_no_attack, _, _ = eval(images, hidden_net, args.batch_size,
@@ -76,8 +78,8 @@ def main():
                 save_images(attack_images, filenames, os.path.join(
                     results_dir, f"{angle}-degrees"))
 
-            print(f"Results {angle} degree rotation")
-            print(f"\t Average bit error = {error_avg:.5f}\n")
+            print_and_write(f"Results {angle} degree rotation", avg_error_rates_path)
+            print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
     elif args.attack == "crop":
         crop_ratios = [0.9, 0.7, 0.5, 0.3, 0.1]
         for crop_ratio in crop_ratios:
@@ -102,8 +104,8 @@ def main():
                 save_images(attack_images, filenames, os.path.join(
                     results_dir, f"ratio-{crop_ratio}"))
 
-            print(f"Results for {crop_ratio * 100}% crop")
-            print(f"\t Average bit error = {error_avg:.5f}\n")
+            print_and_write(f"Results for {crop_ratio * 100}% crop", avg_error_rates_path)
+            print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
     elif args.attack == "jpeg":
         qfs = [100, 80, 60, 40, 20, 10]
         for qf in qfs:
@@ -120,8 +122,8 @@ def main():
                 save_images(attack_images, filenames, os.path.join(
                     results_dir, f"qf-{qf}"))
 
-            print(f"Results for JPEG compression with QF = {qf}")
-            print(f"\t Average bit error = {error_avg:.5f}\n")
+            print_and_write(f"Results for JPEG compression with QF = {qf}", avg_error_rates_path)
+            print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
     elif args.attack == "resize":
         scales = [0.25, 0.5, 0.75, 1.25, 1.5, 1.75, 2]
         for scale in scales:
@@ -139,8 +141,8 @@ def main():
                 save_images(attack_images, filenames, os.path.join(
                     results_dir, f"scale-{scale}"))
 
-            print(f"Results for resize with scale = {scale}")
-            print(f"\t Average bit error = {error_avg:.5f}\n")
+            print_and_write("Results for resize with scale = {scale}", avg_error_rates_path)
+            print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
     elif args.attack == "shear":
         angles = [2, 5, 10, 15, 20, 30]
         for angle in angles:
@@ -162,8 +164,8 @@ def main():
                 save_images(attack_images, filenames, os.path.join(
                     results_dir, f"{angle}-degrees"))
 
-            print(f"Results for shear of angle = {angle}")
-            print(f"\t Average bit error = {error_avg:.5f}\n")
+            print_and_write(f"Results for shear of angle = {angle}", avg_error_rates_path)
+            print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
     elif args.attack == "translate":
         # distance ratios (images of size [w x h] will be translated with distances [w * dr, h * dr]).
         drs = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
@@ -192,8 +194,8 @@ def main():
                 save_images(attack_images, filenames, os.path.join(
                     results_dir, f"ratio-{dr}"))
 
-            print(f"Results for translation with ratio = {dr}")
-            print(f"\t Average bit error = {error_avg:.5f}\n")
+            print_and_write(f"Results for translation with ratio = {dr}", avg_error_rates_path)
+            print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
     elif args.attack == "reflect":
         error_rates, error_avg, attack_images = eval(images, hidden_net,
                                                      args.batch_size, hidden_config.message_length,
@@ -207,8 +209,8 @@ def main():
             save_images(attack_images, filenames, os.path.join(
                 results_dir, f"reflected"))
 
-        print(f"Results for reflected")
-        print(f"\t Average bit error = {error_avg:.5f}\n")
+        print_and_write(f"Results for reflected", avg_error_rates_path)
+        print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
     elif args.attack == "blur":
         sigmas = [1, 3, 5, 7, 9]
         for sigma in sigmas:
@@ -224,8 +226,8 @@ def main():
                 save_images(attack_images, filenames, os.path.join(
                     results_dir, f"sigma-{sigma}"))
 
-            print(f"Results for blur with sigma = {sigma}")
-            print(f"\t Average bit error = {error_avg:.5f}\n")
+            print_and_write(f"Results for blur with sigma = {sigma}", avg_error_rates_path)
+            print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
     elif args.attack == "identity":
         # identity
         # TODO do different arg parser flow for this case?
@@ -260,6 +262,12 @@ def save_images(images, filenames, folder):
         path = os.path.join(folder, filename)
         img = (img + 1) / 2  # restore to [0, 1] range
         save_image(img, path)
+
+
+def print_and_write(s: str, path: str):
+    print(s)
+    with open(path, "a") as f:
+        f.write(s + "\n")
 
 
 def eval(images, hidden_net: Hidden, batch_size, message_length, attack, device):
