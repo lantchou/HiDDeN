@@ -196,20 +196,20 @@ def main():
 
             print_and_write(f"Results for translation with ratio = {dr}", avg_error_rates_path)
             print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
-    elif args.attack == "reflect":
+    elif args.attack == "mirror":
         error_rates, error_avg, attack_images = eval(images, hidden_net,
                                                      args.batch_size, hidden_config.message_length,
                                                      lambda img: TF.hflip(img),
                                                      device)
 
         error_rates_all.append(error_rates)
-        csv_header.append(f"Reflected")
+        csv_header.append(f"Mirrored")
 
         if args.save_images:
             save_images(attack_images, filenames, os.path.join(
                 results_dir, f"reflected"))
 
-        print_and_write(f"Results for reflected", avg_error_rates_path)
+        print_and_write(f"Results for mirrored", avg_error_rates_path)
         print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
     elif args.attack == "blur":
         sigmas = [1, 3, 5, 7, 9]
