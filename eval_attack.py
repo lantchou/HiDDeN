@@ -50,8 +50,8 @@ def main():
 
     results_dir = os.path.join(
         "eval-attack-results",
-        train_options.experiment_name,
         args.attack,
+        train_options.experiment_name,
         time.strftime('%Y.%m.%d--%H-%M-%S'))
     avg_error_rates_path = os.path.join(results_dir, AVG_ERROR_RATES_FILENAME)
     os.makedirs(results_dir)
