@@ -103,6 +103,8 @@ class NoiseArgParser(argparse.Action):
                 layers.append('Rotate')
             elif command[:len('blur')] == 'blur':
                 layers.append('GaussianBlur')
+            elif command[:len('mirror')] == 'mirror':
+                layers.append('Mirror')
             elif command[:len('identity')] == 'identity':
                 # We are adding one Identity() layer in Noiser anyway
                 pass

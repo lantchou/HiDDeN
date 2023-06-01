@@ -6,6 +6,7 @@ from noise_layers.identity import Identity
 from noise_layers.jpeg_compression import JpegCompression
 from noise_layers.rotate import Rotate
 from noise_layers.gaussian_blur import GaussianBlur
+from noise_layers.mirror import Mirror
 
 
 class Noiser(nn.Module):
@@ -24,6 +25,8 @@ class Noiser(nn.Module):
                     self.noise_layers.append(Rotate())
                 elif layer == 'GaussianBlur':
                     self.noise_layers.append(GaussianBlur())
+                elif layer == 'Mirror':
+                    self.noise_layers.append(Mirror())
                 else:
                     raise ValueError(f'Unknown layer string in Noiser.__init__().')
             else:
