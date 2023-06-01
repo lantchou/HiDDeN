@@ -6,7 +6,7 @@ MAX_ROTATION_ANGLE = 20
 
 class Rotate(nn.Module):
     """
-    Resize the image. The target size is original size * resize_ratio
+    Rotate image with randomized angle.
     """
 
     def __init__(self, max_rotation_angle=MAX_ROTATION_ANGLE):
