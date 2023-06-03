@@ -38,7 +38,7 @@ def main():
                         help='Folder with input images')
     parser.add_argument("--attack", "-a", required=True, help="Attack type")
     parser.add_argument('--save-images', '-s', action=argparse.BooleanOptionalAction,
-                        default=True, help='Save attacked encoded images')
+                        default=False, help='Save attacked encoded images')
 
     args = parser.parse_args()
 
@@ -229,19 +229,21 @@ def main():
             print_and_write(f"Results for blur with sigma = {sigma}", avg_error_rates_path)
             print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
     elif args.attack == "identity":
-        # identity
         # TODO do different arg parser flow for this case?
         error_rates, error_avg, attack_images = eval(images, hidden_net,
                                                      args.batch_size, hidden_config.message_length,
                                                      lambda img: img,
                                                      device)
+
         error_rates_all.append(error_rates)
+        csv_header.append("Encoded")
 
         if args.save_images:
             save_images(attack_images, filenames,
                         os.path.join(results_dir, "images"))
 
-        return  # no csv writing needed
+        print_and_write(f"Results for encoding without attack", avg_error_rates_path)
+        print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
 
     # transpose list of lists
     csv_rows = list(map(list, zip(filenames, *error_rates_all)))
