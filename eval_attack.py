@@ -141,7 +141,7 @@ def main():
                 save_images(attack_images, filenames, os.path.join(
                     results_dir, f"scale-{scale}"))
 
-            print_and_write("Results for resize with scale = {scale}", avg_error_rates_path)
+            print_and_write(f"Results for resize with scale = {scale}", avg_error_rates_path)
             print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
     elif args.attack == "shear":
         angles = [2, 5, 10, 15, 20, 30]
