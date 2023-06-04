@@ -105,6 +105,8 @@ class NoiseArgParser(argparse.Action):
                 layers.append('GaussianBlur')
             elif command[:len('mirror')] == 'mirror':
                 layers.append('Mirror')
+            elif command[:len('translate')] == 'translate':
+                layers.append('Translate')
             elif command[:len('identity')] == 'identity':
                 # We are adding one Identity() layer in Noiser anyway
                 pass
