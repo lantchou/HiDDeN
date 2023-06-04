@@ -11,7 +11,7 @@ class Translate(nn.Module):
     min_translate_ratio: float
     max_translate_ratio: float
 
-    def __init__(self, min_translate_ratio: float, max_translate_ratio: float):
+    def __init__(self, min_translate_ratio=0.05, max_translate_ratio=0.5):
         super(Translate, self).__init__()
         self.min_translate_ratio = min_translate_ratio
         self.max_translate_ratio = max_translate_ratio
