@@ -18,12 +18,9 @@ class Translate(nn.Module):
 
     def forward(self, noised_and_cover):
 
-        translate_ratio_x = random.uniform(self.min_translate_ratio, self.max_translate_ratio)
-        translate_ratio_y = random.uniform(self.min_translate_ratio, self.max_translate_ratio)
-        dy = int(noised_and_cover[0].shape[2] * translate_ratio_y)
-        dx = int(noised_and_cover[0].shape[3] * translate_ratio_x)
+        translate_ratio = random.uniform(self.min_translate_ratio, self.max_translate_ratio)
+        dy = int(noised_and_cover[0].shape[2] * translate_ratio)
+        dx = int(noised_and_cover[0].shape[3] * translate_ratio)
 
-        noised_image = noised_and_cover[0]
-        noised_and_cover[0] = TF.affine(noised_image, angle=0, translate=[dx, dy], scale=1, shear=0)
-
+        noised_and_cover[0] = TF.affine(noised_and_cover[0], angle=0, translate=[dx, dy], scale=1, shear=0)
         return noised_and_cover
