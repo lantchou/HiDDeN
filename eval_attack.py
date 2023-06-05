@@ -48,10 +48,14 @@ def main():
     hidden_net, hidden_config, train_options = load_model(
         args.options_file, args.checkpoint_file, device)
 
+    # get last part of folder path
+    folder_name = os.path.basename(os.path.normpath(args.input_folder))
+
     results_dir = os.path.join(
         "eval-attack-results",
         args.attack,
         train_options.experiment_name,
+        folder_name,
         time.strftime('%Y.%m.%d--%H-%M-%S'))
     avg_error_rates_path = os.path.join(results_dir, AVG_ERROR_RATES_FILENAME)
     os.makedirs(results_dir)
