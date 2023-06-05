@@ -8,6 +8,7 @@ from noise_layers.rotate import Rotate
 from noise_layers.gaussian_blur import GaussianBlur
 from noise_layers.mirror import Mirror
 from noise_layers.translate import Translate
+from noise_layers.shear import Shear
 
 
 class Noiser(nn.Module):
@@ -30,6 +31,8 @@ class Noiser(nn.Module):
                     self.noise_layers.append(Mirror())
                 elif layer == 'Translate':
                     self.noise_layers.append(Translate())
+                elif layer == 'Shear':
+                    self.noise_layers.append(Shear())
                 else:
                     raise ValueError(f'Unknown layer string in Noiser.__init__().')
             else:
