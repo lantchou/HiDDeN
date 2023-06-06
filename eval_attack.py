@@ -12,11 +12,16 @@ import csv
 import math
 import io
 import random
+from typing import Union, Sequence
+
+import matplotlib.pyplot as plt
 
 from model.hidden import Hidden
 from utils import load_model
 
 AVG_ERROR_RATES_FILENAME = "error-rates-avg.txt"
+GRAPH_FILENAME = "graph.png"
+
 
 def main():
     if torch.has_mps:
@@ -58,6 +63,7 @@ def main():
         folder_name,
         time.strftime('%Y.%m.%d--%H-%M-%S'))
     avg_error_rates_path = os.path.join(results_dir, AVG_ERROR_RATES_FILENAME)
+    graph_path = os.path.join(results_dir, GRAPH_FILENAME)
     os.makedirs(results_dir)
     csv_header = ["Image", "No attack"]
     error_rates_no_attack, _, _ = eval(images, hidden_net, args.batch_size,
@@ -65,6 +71,7 @@ def main():
     error_rates_all: List[List[float]] = [error_rates_no_attack]
     if args.attack == "rotate":
         angles = [2, 5, 10, 20]
+        avg_error_per_angle = []
         for angle in angles:
             # randomly switch sign of angle
             if random.random() < 0.5:
@@ -75,6 +82,8 @@ def main():
                                                              img, angle),
                                                          device)
 
+            avg_error_per_angle.append(error_avg)
+
             error_rates_all.append(error_rates)
             csv_header.append(f"{angle} degree rotation")
 
@@ -84,8 +93,11 @@ def main():
 
             print_and_write(f"Results {angle} degree rotation", avg_error_rates_path)
             print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
+
+        save_graph(graph_path, angles, avg_error_per_angle, "Rotation angle (Degrees)")
     elif args.attack == "crop":
         crop_ratios = [0.9, 0.7, 0.5, 0.3, 0.1]
+        avg_error_per_ratio = []
         for crop_ratio in crop_ratios:
             crop_width = math.floor(width * crop_ratio)
             crop_height = math.floor(height * crop_ratio)
@@ -101,6 +113,8 @@ def main():
                                                              crop_width),
                                                          device)
 
+            avg_error_per_ratio.append(error_avg)
+
             error_rates_all.append(error_rates)
             csv_header.append(f"{crop_ratio * 100}% crop")
 
@@ -110,14 +124,20 @@ def main():
 
             print_and_write(f"Results for {crop_ratio * 100}% crop", avg_error_rates_path)
             print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
+
+        crop_ratios_percent = [crop_ratio * 100 for crop_ratio in crop_ratios]
+        save_graph(graph_path, crop_ratios_percent, avg_error_per_ratio, "Crop ratio (%)")
     elif args.attack == "jpeg":
         qfs = [100, 80, 60, 40, 20, 10]
+        avg_error_per_qf = []
         for qf in qfs:
             error_rates, error_avg, attack_images = eval(images, hidden_net,
                                                          args.batch_size, hidden_config.message_length,
                                                          lambda img: jpeg_compress(
                                                              img, qf, device),
                                                          device)
+
+            avg_error_per_qf.append(error_avg)
 
             error_rates_all.append(error_rates)
             csv_header.append(f"QF = {qf}")
@@ -128,8 +148,11 @@ def main():
 
             print_and_write(f"Results for JPEG compression with QF = {qf}", avg_error_rates_path)
             print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
+
+        save_graph(graph_path, qfs, avg_error_per_qf, "Quality factor (QF)")
     elif args.attack == "resize":
         scales = [0.25, 0.5, 0.75, 1.25, 1.5, 1.75, 2]
+        avg_error_per_scale = []
         for scale in scales:
             resize_height = math.floor(height * scale)
             resize_width = math.floor(width * scale)
@@ -137,6 +160,8 @@ def main():
                                                          args.batch_size, hidden_config.message_length,
                                                          lambda img: TF.resize(img, [resize_height, resize_width]),
                                                          device)
+
+            avg_error_per_scale.append(error_avg)
 
             error_rates_all.append(error_rates)
             csv_header.append(f"Resize with scale = {scale}")
@@ -147,8 +172,11 @@ def main():
 
             print_and_write(f"Results for resize with scale = {scale}", avg_error_rates_path)
             print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
+
+        save_graph(graph_path, scales, avg_error_per_scale, "Resize scale (x and y)")
     elif args.attack == "shear":
         angles = [2, 5, 10, 15, 20, 30]
+        avg_error_per_angle = []
         for angle in angles:
 
             # randomly flip angle
@@ -161,8 +189,10 @@ def main():
                                                          lambda img: TF.affine(img, 0, [0, 0], 1, angle),
                                                          device)
 
+            avg_error_per_angle.append(error_avg)
+
             error_rates_all.append(error_rates)
-            csv_header.append(f"Shear of scale = {angle}")
+            csv_header.append(f"Shear of angle = {angle}")
 
             if args.save_images:
                 save_images(attack_images, filenames, os.path.join(
@@ -170,9 +200,12 @@ def main():
 
             print_and_write(f"Results for shear of angle = {angle}", avg_error_rates_path)
             print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
+
+        save_graph(graph_path, angles, avg_error_per_angle, "Shear angle (Degrees)")
     elif args.attack == "translate":
         # distance ratios (images of size [w x h] will be translated with distances [w * dr, h * dr]).
         drs = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
+        avg_error_per_dr = []
         for dr in drs:
             dx = math.floor(width * dr)
             dy = math.floor(height * dr)
@@ -191,6 +224,8 @@ def main():
                                                          lambda img: TF.affine(img, 0, [dx, dy], 1, [0, 0]),
                                                          device)
 
+            avg_error_per_dr.append(error_avg)
+
             error_rates_all.append(error_rates)
             csv_header.append(f"Translation with ratio = {dr}")
 
@@ -200,6 +235,9 @@ def main():
 
             print_and_write(f"Results for translation with ratio = {dr}", avg_error_rates_path)
             print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
+
+        drs_percent = [dr * 100 for dr in drs]
+        save_graph(graph_path, drs_percent, avg_error_per_dr, "Translation ratio (Percentage)")
     elif args.attack == "mirror":
         error_rates, error_avg, attack_images = eval(images, hidden_net,
                                                      args.batch_size, hidden_config.message_length,
@@ -217,11 +255,14 @@ def main():
         print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
     elif args.attack == "blur":
         sigmas = [1, 3, 5, 7, 9]
+        avg_error_per_sigma = []
         for sigma in sigmas:
             error_rates, error_avg, attack_images = eval(images, hidden_net,
                                                          args.batch_size, hidden_config.message_length,
                                                          lambda img: TF.gaussian_blur(img, [sigma, sigma], [sigma]),
                                                          device)
+
+            avg_error_per_sigma.append(error_avg)
 
             error_rates_all.append(error_rates)
             csv_header.append(f"Sigma = {sigma}")
@@ -232,6 +273,8 @@ def main():
 
             print_and_write(f"Results for blur with sigma = {sigma}", avg_error_rates_path)
             print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
+
+        save_graph(graph_path, sigmas, avg_error_per_sigma, "Sigma")
     elif args.attack == "identity":
         # TODO do different arg parser flow for this case?
         error_rates, error_avg, attack_images = eval(images, hidden_net,
@@ -239,11 +282,9 @@ def main():
                                                      lambda img: img,
                                                      device)
 
-        error_rates_all.append(error_rates)
-        csv_header.append("Encoded")
-
         if args.save_images:
-            save_images(attack_images, filenames,
+            save_images(attack_images,
+                        filenames,
                         os.path.join(results_dir, "images"))
 
         print_and_write(f"Results for encoding without attack", avg_error_rates_path)
@@ -337,6 +378,19 @@ def jpeg_compress(images: torch.Tensor, qf: int, device) -> Tensor:
             0))  # for some reason torchvision.transforms removes a dimension, and adding one again fixes it
 
     return torch.cat(jpeg_images).to(device)
+
+
+def save_graph(path: str,
+               params: Sequence[Union[int, float]],
+               bit_errors: List[float],
+               xlabel: str):
+    bit_accuracies = [(1 - bit_error) * 100 for bit_error in bit_errors]
+    plt.plot(params, bit_accuracies, marker='o')
+    plt.xlabel(xlabel)
+    plt.ylabel("Bit accuracy (%)")
+    plt.ylim(bottom=40)
+    plt.grid()
+    plt.savefig(path)
 
 
 if __name__ == "__main__":
