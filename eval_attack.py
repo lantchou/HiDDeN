@@ -6,6 +6,7 @@ from PIL import Image
 from torch.functional import Tensor
 import torchvision.transforms.functional as TF
 from torchvision.utils import save_image
+from torchmetrics.image.ssim import StructuralSimilarityIndexMeasure
 from typing import List, Tuple
 import numpy as np
 import csv
@@ -19,7 +20,7 @@ import matplotlib.pyplot as plt
 from model.hidden import Hidden
 from utils import load_model
 
-AVG_ERROR_RATES_FILENAME = "error-rates-avg.txt"
+RESULTS_FILENAME = "results.txt"
 GRAPH_FILENAME = "graph.png"
 
 
@@ -62,11 +63,11 @@ def main():
         train_options.experiment_name,
         folder_name,
         time.strftime('%Y.%m.%d--%H-%M-%S'))
-    avg_error_rates_path = os.path.join(results_dir, AVG_ERROR_RATES_FILENAME)
+    results_path = os.path.join(results_dir, RESULTS_FILENAME)
     graph_path = os.path.join(results_dir, GRAPH_FILENAME)
     os.makedirs(results_dir)
     csv_header = ["Image", "No attack"]
-    error_rates_no_attack, _, _ = eval(images, hidden_net, args.batch_size,
+    error_rates_no_attack, _, _, _ = eval(images, hidden_net, args.batch_size,
                                        hidden_config.message_length, lambda img: img, device)
     error_rates_all: List[List[float]] = [error_rates_no_attack]
     if args.attack == "rotate":
@@ -76,7 +77,7 @@ def main():
             # randomly switch sign of angle
             if random.random() < 0.5:
                 angle = -angle
-            error_rates, error_avg, attack_images = eval(images, hidden_net,
+            error_rates, error_avg, ssim_avg, attack_images = eval(images, hidden_net,
                                                          args.batch_size, hidden_config.message_length,
                                                          lambda img: TF.rotate(
                                                              img, angle),
@@ -91,8 +92,9 @@ def main():
                 save_images(attack_images, filenames, os.path.join(
                     results_dir, f"{angle}-degrees"))
 
-            print_and_write(f"Results {angle} degree rotation", avg_error_rates_path)
-            print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
+            print_and_write(f"Results {angle} degree rotation", results_path)
+            print_and_write(f"\t Average bit error = {error_avg:.5f}", results_path)
+            print_and_write(f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
 
         save_graph(graph_path, angles, avg_error_per_angle, "Rotation angle (Degrees)")
     elif args.attack == "crop":
@@ -103,7 +105,7 @@ def main():
             crop_height = math.floor(height * crop_ratio)
             crop_top = random.randrange(0, height - crop_height)
             crop_left = random.randrange(0, width - crop_width)
-            error_rates, error_avg, attack_images = eval(images, hidden_net,
+            error_rates, error_avg, ssim_avg, attack_images = eval(images, hidden_net,
                                                          args.batch_size, hidden_config.message_length,
                                                          lambda img: TF.crop(
                                                              img,
@@ -122,8 +124,9 @@ def main():
                 save_images(attack_images, filenames, os.path.join(
                     results_dir, f"ratio-{crop_ratio}"))
 
-            print_and_write(f"Results for {crop_ratio * 100}% crop", avg_error_rates_path)
-            print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
+            print_and_write(f"Results for {crop_ratio * 100}% crop", results_path)
+            print_and_write(f"\t Average bit error = {error_avg:.5f}", results_path)
+            print_and_write(f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
 
         crop_ratios_percent = [crop_ratio * 100 for crop_ratio in crop_ratios]
         save_graph(graph_path, crop_ratios_percent, avg_error_per_ratio, "Crop ratio (%)")
@@ -131,7 +134,7 @@ def main():
         qfs = [100, 80, 60, 40, 20, 10]
         avg_error_per_qf = []
         for qf in qfs:
-            error_rates, error_avg, attack_images = eval(images, hidden_net,
+            error_rates, error_avg, ssim_avg, attack_images = eval(images, hidden_net,
                                                          args.batch_size, hidden_config.message_length,
                                                          lambda img: jpeg_compress(
                                                              img, qf, device),
@@ -146,8 +149,9 @@ def main():
                 save_images(attack_images, filenames, os.path.join(
                     results_dir, f"qf-{qf}"))
 
-            print_and_write(f"Results for JPEG compression with QF = {qf}", avg_error_rates_path)
-            print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
+            print_and_write(f"Results for JPEG compression with QF = {qf}", results_path)
+            print_and_write(f"\t Average bit error = {error_avg:.5f}", results_path)
+            print_and_write(f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
 
         save_graph(graph_path, qfs, avg_error_per_qf, "Quality factor (QF)")
     elif args.attack == "resize":
@@ -156,7 +160,7 @@ def main():
         for scale in scales:
             resize_height = math.floor(height * scale)
             resize_width = math.floor(width * scale)
-            error_rates, error_avg, attack_images = eval(images, hidden_net,
+            error_rates, error_avg, ssim_avg, attack_images = eval(images, hidden_net,
                                                          args.batch_size, hidden_config.message_length,
                                                          lambda img: TF.resize(img, [resize_height, resize_width]),
                                                          device)
@@ -170,8 +174,9 @@ def main():
                 save_images(attack_images, filenames, os.path.join(
                     results_dir, f"scale-{scale}"))
 
-            print_and_write(f"Results for resize with scale = {scale}", avg_error_rates_path)
-            print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
+            print_and_write(f"Results for resize with scale = {scale}", results_path)
+            print_and_write(f"\t Average bit error = {error_avg:.5f}", results_path)
+            print_and_write(f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
 
         save_graph(graph_path, scales, avg_error_per_scale, "Resize scale (x and y)")
     elif args.attack == "shear":
@@ -182,7 +187,7 @@ def main():
             # randomly flip angle
             if random.random() < 0.5:
                 angle = -angle
-            error_rates, error_avg, attack_images = eval(images,
+            error_rates, error_avg, ssim_avg, attack_images = eval(images,
                                                          hidden_net,
                                                          args.batch_size,
                                                          hidden_config.message_length,
@@ -198,8 +203,9 @@ def main():
                 save_images(attack_images, filenames, os.path.join(
                     results_dir, f"{angle}-degrees"))
 
-            print_and_write(f"Results for shear of angle = {angle}", avg_error_rates_path)
-            print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
+            print_and_write(f"Results for shear of angle = {angle}", results_path)
+            print_and_write(f"\t Average bit error = {error_avg:.5f}", results_path)
+            print_and_write(f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
 
         save_graph(graph_path, angles, avg_error_per_angle, "Shear angle (Degrees)")
     elif args.attack == "translate":
@@ -217,7 +223,7 @@ def main():
             if random.random() < 0.5:
                 dy = -dy
 
-            error_rates, error_avg, attack_images = eval(images,
+            error_rates, error_avg, ssim_avg, attack_images = eval(images,
                                                          hidden_net,
                                                          args.batch_size,
                                                          hidden_config.message_length,
@@ -233,13 +239,14 @@ def main():
                 save_images(attack_images, filenames, os.path.join(
                     results_dir, f"ratio-{dr}"))
 
-            print_and_write(f"Results for translation with ratio = {dr}", avg_error_rates_path)
-            print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
+            print_and_write(f"Results for translation with ratio = {dr}", results_path)
+            print_and_write(f"\t Average bit error = {error_avg:.5f}", results_path)
+            print_and_write(f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
 
         drs_percent = [dr * 100 for dr in drs]
         save_graph(graph_path, drs_percent, avg_error_per_dr, "Translation ratio (Percentage)")
     elif args.attack == "mirror":
-        error_rates, error_avg, attack_images = eval(images, hidden_net,
+        error_rates, error_avg, ssim_avg, attack_images = eval(images, hidden_net,
                                                      args.batch_size, hidden_config.message_length,
                                                      lambda img: TF.hflip(img),
                                                      device)
@@ -251,13 +258,14 @@ def main():
             save_images(attack_images, filenames, os.path.join(
                 results_dir, f"reflected"))
 
-        print_and_write(f"Results for mirrored", avg_error_rates_path)
-        print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
+        print_and_write(f"Results for mirrored", results_path)
+        print_and_write(f"\t Average bit error = {error_avg:.5f}", results_path)
+        print_and_write(f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
     elif args.attack == "blur":
         sigmas = [1, 3, 5, 7, 9]
         avg_error_per_sigma = []
         for sigma in sigmas:
-            error_rates, error_avg, attack_images = eval(images, hidden_net,
+            error_rates, error_avg, ssim_avg, attack_images = eval(images, hidden_net,
                                                          args.batch_size, hidden_config.message_length,
                                                          lambda img: TF.gaussian_blur(img, [sigma, sigma], [sigma]),
                                                          device)
@@ -271,13 +279,14 @@ def main():
                 save_images(attack_images, filenames, os.path.join(
                     results_dir, f"sigma-{sigma}"))
 
-            print_and_write(f"Results for blur with sigma = {sigma}", avg_error_rates_path)
-            print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
+            print_and_write(f"Results for blur with sigma = {sigma}", results_path)
+            print_and_write(f"\t Average bit error = {error_avg:.5f}", results_path)
+            print_and_write(f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
 
         save_graph(graph_path, sigmas, avg_error_per_sigma, "Sigma")
     elif args.attack == "identity":
         # TODO do different arg parser flow for this case?
-        error_rates, error_avg, attack_images = eval(images, hidden_net,
+        error_rates, error_avg, ssim_avg, attack_images = eval(images, hidden_net,
                                                      args.batch_size, hidden_config.message_length,
                                                      lambda img: img,
                                                      device)
@@ -287,8 +296,9 @@ def main():
                         filenames,
                         os.path.join(results_dir, "images"))
 
-        print_and_write(f"Results for encoding without attack", avg_error_rates_path)
-        print_and_write(f"\t Average bit error = {error_avg:.5f}\n", avg_error_rates_path)
+        print_and_write(f"Results for encoding without attack", results_path)
+        print_and_write(f"\t Average bit error = {error_avg:.5f}", results_path)
+        print_and_write(f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
 
     # transpose list of lists
     csv_rows = list(map(list, zip(filenames, *error_rates_all)))
@@ -318,6 +328,7 @@ def print_and_write(s: str, path: str):
 
 
 def eval(images, hidden_net: Hidden, batch_size, message_length, attack, device):
+    ssim = StructuralSimilarityIndexMeasure(data_range=2).to(device)
     image_count = images.shape[0]
     messages = np.random.choice([0, 1],
                                 (image_count, message_length))
@@ -325,6 +336,7 @@ def eval(images, hidden_net: Hidden, batch_size, message_length, attack, device)
     attack_images = []
     error_rates = []
     error_count = 0
+    ssim_sum = 0
     for i in range(0, image_count, batch_size):
         end = min(i + batch_size, image_count)
         batch_imgs = images[i:end].clip(-1, 1)
@@ -334,7 +346,7 @@ def eval(images, hidden_net: Hidden, batch_size, message_length, attack, device)
         batch_imgs_enc_att = attack(batch_imgs_enc)
         batch_msgs_dec = hidden_net.eval_decode_on_batch(batch_imgs_enc_att)
 
-        for msg, msg_dec in zip(batch_msgs, batch_msgs_dec):
+        for img, enc_img, msg, msg_dec in zip(batch_imgs, batch_imgs_enc, batch_msgs, batch_msgs_dec):
             msg_detached = msg.detach().cpu().numpy()
             msg_dec_rounded = msg_dec.detach().cpu().numpy().round().clip(0, 1)
             msg_error_count = np.sum(
@@ -343,11 +355,15 @@ def eval(images, hidden_net: Hidden, batch_size, message_length, attack, device)
             error_rates.append(msg_error_rate)
             error_count += msg_error_count
 
+            ssim_sum += ssim(enc_img.unsqueeze_(
+                0), img.unsqueeze_(0))
+
         for att_img in batch_imgs_enc_att:
             attack_images.append(att_img)
 
     error_avg = error_count / (image_count * message_length)
-    return error_rates, error_avg, attack_images
+    ssim_avg = ssim_sum / image_count
+    return error_rates, error_avg, ssim_avg, attack_images
 
 
 def load_images(folder: str, device) -> Tuple[Tensor, List[str]]:
@@ -388,7 +404,7 @@ def save_graph(path: str,
     plt.plot(params, bit_accuracies, marker='o')
     plt.xlabel(xlabel)
     plt.ylabel("Bit accuracy (%)")
-    plt.ylim(bottom=40)
+    plt.ylim(bottom=48, top=102)
     plt.grid()
     plt.savefig(path)
 
