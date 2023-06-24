@@ -88,7 +88,7 @@ class JpegCompression(nn.Module):
     def create_mask(self, requested_shape):
         if self.jpeg_mask is None or requested_shape > self.jpeg_mask.shape[1:]:
             self.jpeg_mask = torch.empty((3,) + requested_shape, device=self.device)
-            for channel, weights_to_keep_range in enumerate(self.yuv_keep_weighs):
+            for channel, weights_to_keep_range in enumerate(self.yuv_keep_weight_ranges):
                 mask = torch.from_numpy(get_jpeg_yuv_filter_mask(requested_shape, 8, weights_to_keep_range))
                 self.jpeg_mask[channel] = mask
 
