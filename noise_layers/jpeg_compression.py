@@ -29,13 +29,12 @@ def gen_filters(size_x: int, size_y: int, dct_or_idct_fun: callable) -> np.ndarr
 #     return mask
 
 
-def get_jpeg_yuv_filter_mask(image_shape: tuple, window_size: int, keep_count_range: (int, int)):
+def get_jpeg_yuv_filter_mask(image_shape: tuple, window_size: int, keep_count: int):
     mask = np.zeros((window_size, window_size), dtype=np.uint8)
 
     index_order = sorted(((x, y) for x in range(window_size) for y in range(window_size)),
                          key=lambda p: (p[0] + p[1], -p[1] if (p[0] + p[1]) % 2 else p[1]))
 
-    keep_count = np.random.randint(keep_count_range[0], keep_count_range[1])
     for i, j in index_order[0:keep_count]:
         mask[i, j] = 1
 
@@ -67,7 +66,7 @@ def yuv2rgb(image_yuv, image_rgb_out):
 
 
 class JpegCompression(nn.Module):
-    def __init__(self, device, yuv_keep_weight_ranges=((5, 25), (3, 9), (3, 9))):
+    def __init__(self, device, yuv_keep_weights=(25, 9, 9)):
         super(JpegCompression, self).__init__()
         self.device = device
 
@@ -76,7 +75,7 @@ class JpegCompression(nn.Module):
         self.idct_conv_weights = torch.tensor(gen_filters(8, 8, idct_coeff), dtype=torch.float32).to(self.device)
         self.idct_conv_weights.unsqueeze_(1)
 
-        self.yuv_keep_weight_ranges = yuv_keep_weight_ranges
+        self.yuv_keep_weights = yuv_keep_weights
         self.keep_coeff_masks = []
 
         self.jpeg_mask = None
@@ -88,8 +87,8 @@ class JpegCompression(nn.Module):
     def create_mask(self, requested_shape):
         if self.jpeg_mask is None or requested_shape > self.jpeg_mask.shape[1:]:
             self.jpeg_mask = torch.empty((3,) + requested_shape, device=self.device)
-            for channel, weights_to_keep_range in enumerate(self.yuv_keep_weight_ranges):
-                mask = torch.from_numpy(get_jpeg_yuv_filter_mask(requested_shape, 8, weights_to_keep_range))
+            for channel, weights_to_keep in enumerate(self.yuv_keep_weights):
+                mask = torch.from_numpy(get_jpeg_yuv_filter_mask(requested_shape, 8, weights_to_keep))
                 self.jpeg_mask[channel] = mask
 
     def get_mask(self, image_shape):
