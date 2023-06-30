@@ -93,7 +93,7 @@ def main():
                     results_dir, f"{angle}-degrees"))
 
             print_and_write(f"Results {angle} degree rotation", results_path)
-            print_and_write(f"\t Average bit error = {error_avg:.5f}", results_path)
+            print_and_write(f"\t Average bit accuracy = {(1 - error_avg) * 100:.5f}%", results_path)
             print_and_write(f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
 
         save_graph(graph_path, angles, avg_error_per_angle, "Rotation angle (Degrees)")
@@ -125,13 +125,13 @@ def main():
                     results_dir, f"ratio-{crop_ratio}"))
 
             print_and_write(f"Results for {crop_ratio * 100}% crop", results_path)
-            print_and_write(f"\t Average bit error = {error_avg:.5f}", results_path)
+            print_and_write(f"\t Average bit accuracy = {(1 - error_avg) * 100:.5f}%", results_path)
             print_and_write(f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
 
         crop_ratios_percent = [crop_ratio * 100 for crop_ratio in crop_ratios]
         save_graph(graph_path, crop_ratios_percent, avg_error_per_ratio, "Crop ratio (%)")
     elif args.attack == "jpeg":
-        qfs = [100, 80, 60, 40, 20, 10]
+        qfs = [100, 95, 90, 85, 80, 60, 50, 40, 20, 10]
         avg_error_per_qf = []
         for qf in qfs:
             error_rates, error_avg, ssim_avg, attack_images = eval(images, hidden_net,
@@ -150,10 +150,10 @@ def main():
                     results_dir, f"qf-{qf}"))
 
             print_and_write(f"Results for JPEG compression with QF = {qf}", results_path)
-            print_and_write(f"\t Average bit error = {error_avg:.5f}", results_path)
+            print_and_write(f"\t Average bit accuracy = {(1 - error_avg) * 100:.5f}%", results_path)
             print_and_write(f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
 
-        save_graph(graph_path, qfs, avg_error_per_qf, "Quality factor (QF)")
+        save_graph(graph_path, qfs, avg_error_per_qf, "Quality factor (QF)", True)
     elif args.attack == "resize":
         scales = [0.25, 0.5, 0.75, 1.25, 1.5, 1.75, 2]
         avg_error_per_scale = []
@@ -175,7 +175,7 @@ def main():
                     results_dir, f"scale-{scale}"))
 
             print_and_write(f"Results for resize with scale = {scale}", results_path)
-            print_and_write(f"\t Average bit error = {error_avg:.5f}", results_path)
+            print_and_write(f"\t Average bit accuracy = {(1 - error_avg) * 100:.5f}%", results_path)
             print_and_write(f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
 
         save_graph(graph_path, scales, avg_error_per_scale, "Resize scale (x and y)")
@@ -204,7 +204,7 @@ def main():
                     results_dir, f"{angle}-degrees"))
 
             print_and_write(f"Results for shear of angle = {angle}", results_path)
-            print_and_write(f"\t Average bit error = {error_avg:.5f}", results_path)
+            print_and_write(f"\t Average bit accuracy = {(1 - error_avg) * 100:.5f}%", results_path)
             print_and_write(f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
 
         save_graph(graph_path, angles, avg_error_per_angle, "Shear angle (Degrees)")
@@ -240,7 +240,7 @@ def main():
                     results_dir, f"ratio-{dr}"))
 
             print_and_write(f"Results for translation with ratio = {dr}", results_path)
-            print_and_write(f"\t Average bit error = {error_avg:.5f}", results_path)
+            print_and_write(f"\t Average bit accuracy = {(1 - error_avg) * 100:.5f}%", results_path)
             print_and_write(f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
 
         drs_percent = [dr * 100 for dr in drs]
@@ -259,7 +259,7 @@ def main():
                 results_dir, f"reflected"))
 
         print_and_write(f"Results for mirrored", results_path)
-        print_and_write(f"\t Average bit error = {error_avg:.5f}", results_path)
+        print_and_write(f"\t Average bit accuracy = {(1 - error_avg) * 100:.5f}%", results_path)
         print_and_write(f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
     elif args.attack == "blur":
         sigmas = [1, 3, 5, 7, 9]
@@ -280,7 +280,7 @@ def main():
                     results_dir, f"sigma-{sigma}"))
 
             print_and_write(f"Results for blur with sigma = {sigma}", results_path)
-            print_and_write(f"\t Average bit error = {error_avg:.5f}", results_path)
+            print_and_write(f"\t Average bit accuracy = {(1 - error_avg) * 100:.5f}%", results_path)
             print_and_write(f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
 
         save_graph(graph_path, sigmas, avg_error_per_sigma, "Sigma")
@@ -297,7 +297,7 @@ def main():
                         os.path.join(results_dir, "images"))
 
         print_and_write(f"Results for encoding without attack", results_path)
-        print_and_write(f"\t Average bit error = {error_avg:.5f}", results_path)
+        print_and_write(f"\t Average bit accuracy = {(1 - error_avg) * 100:.5f}%", results_path)
         print_and_write(f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
 
     # transpose list of lists
@@ -399,12 +399,17 @@ def jpeg_compress(images: torch.Tensor, qf: int, device) -> Tensor:
 def save_graph(path: str,
                params: Sequence[Union[int, float]],
                bit_errors: List[float],
-               xlabel: str):
+               xlabel: str,
+               desc=False):
     bit_accuracies = [(1 - bit_error) * 100 for bit_error in bit_errors]
     plt.plot(params, bit_accuracies, marker='o')
     plt.xlabel(xlabel)
     plt.ylabel("Bit accuracy (%)")
     plt.ylim(bottom=48, top=102)
+
+    if desc:
+        plt.gca().invert_xaxis()
+
     plt.grid()
     plt.savefig(path)
 
