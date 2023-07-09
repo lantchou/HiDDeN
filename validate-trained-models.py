@@ -5,7 +5,7 @@ import argparse
 import torch
 import numpy as np
 import pickle
-import utils
+import util
 import csv
 
 from model.hidden import Hidden
@@ -47,11 +47,11 @@ def main():
         current_run = os.path.join(args.runs_root, run_name)
         print(f'Run folder: {current_run}')
         options_file = os.path.join(current_run, 'options-and-config.pickle')
-        train_options, hidden_config, noise_config = utils.load_options(options_file)
+        train_options, hidden_config, noise_config = util.load_options(options_file)
         train_options.train_folder = os.path.join(args.data_dir, 'val')
         train_options.validation_folder = os.path.join(args.data_dir, 'val')
         train_options.batch_size = args.batch_size
-        checkpoint, chpt_file_name = utils.load_last_checkpoint(os.path.join(current_run, 'checkpoints'))
+        checkpoint, chpt_file_name = util.load_last_checkpoint(os.path.join(current_run, 'checkpoints'))
         print(f'Loaded checkpoint from file {chpt_file_name}')
 
         noiser = Noiser(noise_config)
@@ -59,7 +59,7 @@ def main():
         utils.model_from_checkpoint(model, checkpoint)
 
         print('Model loaded successfully. Starting validation run...')
-        _, val_data = utils.get_data_loaders(hidden_config, train_options)
+        _, val_data = util.get_data_loaders(hidden_config, train_options)
         file_count = len(val_data.dataset)
         if file_count % train_options.batch_size == 0:
             steps_in_epoch = file_count // train_options.batch_size
@@ -81,7 +81,7 @@ def main():
                 losses_accu[name].update(loss)
             if step % print_each == 0 or step == steps_in_epoch:
                 print(f'Step {step}/{steps_in_epoch}')
-                utils.print_progress(losses_accu)
+                util.print_progress(losses_accu)
                 print('-' * 40)
 
         # utils.print_progress(losses_accu)

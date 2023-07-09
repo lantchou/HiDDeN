@@ -18,7 +18,7 @@ from typing import Union, Sequence
 import matplotlib.pyplot as plt
 
 from model.hidden import Hidden
-from utils import load_model
+from util import load_model
 
 RESULTS_FILENAME = "results.txt"
 GRAPH_FILENAME = "graph.png"

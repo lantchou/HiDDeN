@@ -3,7 +3,7 @@ import pprint
 import argparse
 import torch
 import pickle
-import utils
+import util
 import logging
 import sys
 
@@ -67,8 +67,8 @@ def main():
     if args.command == 'continue':
         this_run_folder = args.folder
         options_file = os.path.join(this_run_folder, 'options-and-config.pickle')
-        train_options, hidden_config, noise_config = utils.load_options(options_file)
-        checkpoint, loaded_checkpoint_file_name = utils.load_last_checkpoint(os.path.join(this_run_folder, 'checkpoints'))
+        train_options, hidden_config, noise_config = util.load_options(options_file)
+        checkpoint, loaded_checkpoint_file_name = util.load_last_checkpoint(os.path.join(this_run_folder, 'checkpoints'))
         train_options.start_epoch = checkpoint['epoch'] + 1
         if args.data_dir is not None:
             train_options.train_folder = os.path.join(args.data_dir, 'train')
@@ -107,7 +107,7 @@ def main():
                                             enable_fp16=args.enable_fp16
                                             )
 
-        this_run_folder = utils.create_folder_for_run(train_options.runs_folder, args.name)
+        this_run_folder = util.create_folder_for_run(train_options.runs_folder, args.name)
         with open(os.path.join(this_run_folder, 'options-and-config.pickle'), 'wb+') as f:
             pickle.dump(train_options, f)
             pickle.dump(noise_config, f)
@@ -137,7 +137,7 @@ def main():
         # if we are continuing, we have to load the model params
         assert checkpoint is not None
         logging.info(f'Loading checkpoint from file {loaded_checkpoint_file_name}')
-        utils.model_from_checkpoint(model, checkpoint)
+        util.model_from_checkpoint(model, checkpoint)
 
     logging.info('HiDDeN model: {}\n'.format(model.to_string()))
     logging.info('Model Configuration:\n')

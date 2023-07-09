@@ -7,7 +7,7 @@ import torch.nn
 from torchmetrics.image.ssim import StructuralSimilarityIndexMeasure
 from PIL import Image
 import torchvision.transforms.functional as TF
-import utils
+import util
 from model.hidden import *
 
 TEST_IMAGES_FOLDER = "../data/test/"
@@ -38,7 +38,7 @@ def main():
                         default=False, help='Resize if true, else crop')
     args = parser.parse_args()
 
-    hidden_net, hidden_config, train_options = utils.load_model(
+    hidden_net, hidden_config, train_options = util.load_model(
         args.options_file, args.checkpoint_file, device)
 
     images, filenames = load_test_images(
@@ -59,10 +59,10 @@ def main():
 
     encoded_images = torch.cat(encoded_images).cpu()
     random_indeces = np.random.choice(test_size, min(test_size, 8))
-    utils.save_images(images[random_indeces].cpu(),
-                      encoded_images[random_indeces],
+    util.save_images(images[random_indeces].cpu(),
+                     encoded_images[random_indeces],
                       f'{train_options.experiment_name}-{args.image_size}-{"resize" if args.resize else "crop"}.png',
-                      TEST_RESULTS_FOLDER)
+                     TEST_RESULTS_FOLDER)
 
 
 def load_test_images(img_size, device, size, resize=True):

@@ -3,7 +3,7 @@ import time
 import torch
 import numpy as np
 from tensorboard_logger import TensorBoardLogger
-import utils
+import util
 import logging
 from collections import defaultdict
 
@@ -33,7 +33,7 @@ def train(model: Hidden,
     :return:
     """
 
-    train_data, val_data = utils.get_data_loaders(hidden_config, train_options)
+    train_data, val_data = util.get_data_loaders(hidden_config, train_options)
     file_count = len(train_data.dataset)
     if file_count % train_options.batch_size == 0:
         steps_in_epoch = file_count // train_options.batch_size
@@ -60,14 +60,14 @@ def train(model: Hidden,
             if step % print_each == 0 or step == steps_in_epoch:
                 logging.info(
                     'Epoch: {}/{} Step: {}/{}'.format(epoch, train_options.number_of_epochs, step, steps_in_epoch))
-                utils.log_progress(training_losses)
+                util.log_progress(training_losses)
                 logging.info('-' * 40)
             step += 1
 
         train_duration = time.time() - epoch_start
         logging.info('Epoch {} training duration {:.2f} sec'.format(epoch, train_duration))
         logging.info('-' * 40)
-        utils.write_losses(os.path.join(this_run_folder, 'train.csv'), training_losses, epoch, train_duration)
+        util.write_losses(os.path.join(this_run_folder, 'train.csv'), training_losses, epoch, train_duration)
         if tb_logger_train is not None:
             tb_logger_train.save_losses(training_losses, epoch)
             tb_logger_train.save_grads(epoch)
@@ -86,7 +86,7 @@ def train(model: Hidden,
                 if hidden_config.enable_fp16:
                     image = image.float()
                     encoded_images = encoded_images.float()
-                utils.save_images(image.cpu()[:images_to_save, :, :, :],
+                util.save_images(image.cpu()[:images_to_save, :, :, :],
                                   encoded_images[:images_to_save, :, :, :].cpu(),
                                   f"epoch-{epoch}.png",
                                   os.path.join(this_run_folder, 'images'), resize_to=saved_images_size)
@@ -97,8 +97,8 @@ def train(model: Hidden,
             tb_logger_val.save_grads(epoch)
             tb_logger_val.save_tensors(epoch)
 
-        utils.log_progress(validation_losses)
+        util.log_progress(validation_losses)
         logging.info('-' * 40)
-        utils.save_checkpoint(model, train_options.experiment_name, epoch, os.path.join(this_run_folder, 'checkpoints'))
-        utils.write_losses(os.path.join(this_run_folder, 'validation.csv'), validation_losses, epoch,
+        util.save_checkpoint(model, train_options.experiment_name, epoch, os.path.join(this_run_folder, 'checkpoints'))
+        util.write_losses(os.path.join(this_run_folder, 'validation.csv'), validation_losses, epoch,
                            time.time() - epoch_start)
