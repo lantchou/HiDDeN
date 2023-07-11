@@ -24,7 +24,7 @@ class Noiser(nn.Module):
             if type(layer) is str:
                 if layer == 'JpegPlaceholder':
                     self.noise_layers.append(JpegCompression(device))
-                if layer == 'JpegDiff':
+                elif layer == 'JpegDiff':
                     self.noise_layers.append(JpegDiff(device))
                 elif layer == 'Rotate':
                     self.noise_layers.append(Rotate())
