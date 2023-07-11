@@ -37,36 +37,35 @@ def zigzag_indices(n):
     i = 0
     j = 0
     count = 0
+    direction = 1
 
     while count < n:
-        # Upper right triangle
-        while i >= 0:
-            indices.append((i, j))
-            count += 1
-
-            if count == n:
-                break
-
-            i -= 1
-            j += 1
+        indices.append((i, j))
+        count += 1
 
         if count == n:
             break
 
-        i = 1
-        # Lower left triangle
-        while j >= 0:
-            indices.append((i, j))
-            count += 1
-
-            if count == n:
-                break
-
-            i += 1
-            j -= 1
-
-        i += 1
-        j = 1
+        if direction == 1:
+            if i == 0:
+                j += 1
+                direction = -1
+            elif j == 7:
+                i += 1
+                direction = -1
+            else:
+                i -= 1
+                j += 1
+        else:
+            if i == 7:
+                j += 1
+                direction = 1
+            elif j == 0:
+                i += 1
+                direction = 1
+            else:
+                i += 1
+                j -= 1
 
     return torch.tensor(indices)
 
@@ -77,6 +76,7 @@ def get_jpeg_yuv_filter_mask(image_shape: tuple, window_size: int, keep_count: i
     # index_order = sorted(((x, y) for x in range(window_size) for y in range(window_size)),
     #                      key=lambda p: (p[0] + p[1], -p[1] if (p[0] + p[1]) % 2 else p[1]))
     indeces = zigzag_indices(keep_count)
+    print(indeces)
 
     for i, j in indeces:
         mask[i, j] = 1
@@ -140,6 +140,7 @@ class JpegCompression(nn.Module):
         if self.jpeg_mask is None or requested_shape > self.jpeg_mask.shape[1:]:
             self.jpeg_mask = torch.empty((3,) + requested_shape, device=self.device)
             for channel, weights_to_keep in enumerate(self.yuv_keep_weights):
+                print('Creating mask for channel', channel, 'with', weights_to_keep, 'weights.')
                 mask = torch.from_numpy(get_jpeg_yuv_filter_mask(requested_shape, 8, weights_to_keep))
                 self.jpeg_mask[channel] = mask
 
