@@ -131,7 +131,7 @@ def main():
         crop_ratios_percent = [crop_ratio * 100 for crop_ratio in crop_ratios]
         save_graph(graph_path, crop_ratios_percent, avg_error_per_ratio, "Crop ratio (%)")
     elif args.attack == "jpeg":
-        qfs = [100, 95, 90, 85, 80, 60, 50, 40, 20, 10]
+        qfs = [100, 90, 80, 70, 60, 50, 40, 30, 20, 10]
         avg_error_per_qf = []
         for qf in qfs:
             error_rates, error_avg, ssim_avg, attack_images = eval(images, hidden_net,
