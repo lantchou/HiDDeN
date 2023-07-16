@@ -99,6 +99,8 @@ class NoiseArgParser(argparse.Action):
                 layers.append('JpegPlaceholder')
             elif command[:len('diffjpeg')] == 'diffjpeg':
                 layers.append('JpegDiff')
+            elif command[:len('2diffjpeg')] == '2diffjpeg':
+                layers.append('JpegDiff2')
             elif command[:len('quant')] == 'quant':
                 layers.append('QuantizationPlaceholder')
             elif command[:len('rotate')] == 'rotate':
