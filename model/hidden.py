@@ -27,7 +27,7 @@ class Hidden:
             configuration, self.encoder, self.decoder, noiser).to(device)
         self.discriminator = Discriminator(configuration).to(device)
         self.optimizer_enc_dec = torch.optim.Adam(
-            self.encoder_decoder.parameters())
+            self.encoder_decoder.parameters(), lr=configuration.learning_rate)
         self.optimizer_discrim = torch.optim.Adam(
             self.discriminator.parameters())
 

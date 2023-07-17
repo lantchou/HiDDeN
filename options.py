@@ -31,7 +31,8 @@ class HiDDenConfiguration():
                  decoder_loss: float,
                  encoder_loss: float,
                  adversarial_loss: float,
-                 enable_fp16: bool = False):
+                 enable_fp16: bool = False,
+                 learning_rate: float = 1e-3):
         self.H = H
         self.W = W
         self.message_length = message_length
@@ -47,3 +48,4 @@ class HiDDenConfiguration():
         self.encoder_loss = encoder_loss
         self.adversarial_loss = adversarial_loss
         self.enable_fp16 = enable_fp16
+        self.learning_rate = learning_rate

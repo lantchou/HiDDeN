@@ -50,6 +50,8 @@ def main():
     new_run_parser.add_argument('--checkpoint-file', required=False, default=None,
                                 type=str, help='Optional checkpoint file to start from.')
 
+    new_run_parser.add_argument('--learning-rate', type=float, required=False, default=1e-3, help='The learning rate.')
+
     new_run_parser.set_defaults(tensorboard=False)
     new_run_parser.set_defaults(enable_fp16=False)
 
@@ -60,6 +62,7 @@ def main():
                                  help='The directory where the data is stored. Specify a value only if you want to override the previous value.')
     continue_parser.add_argument('--epochs', '-e', required=False, type=int,
                                 help='Number of epochs to run the simulation. Specify a value only if you want to override the previous value.')
+    continue_parser.add_argument('--batch-size', '-b', required=False, default=None, type=int, help='The batch size.')
     # continue_parser.add_argument('--tensorboard', action='store_true',
     #                             help='Override the previous setting regarding tensorboard logging.')
 
@@ -107,7 +110,8 @@ def main():
                                             decoder_loss=1,
                                             encoder_loss=0.7,
                                             adversarial_loss=1e-3,
-                                            enable_fp16=args.enable_fp16
+                                            enable_fp16=args.enable_fp16,
+                                            learning_rate=args.learning_rate,
                                             )
 
         this_run_folder = util.create_folder_for_run(train_options.runs_folder, args.name)
