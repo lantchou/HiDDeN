@@ -43,6 +43,7 @@ def main():
     parser.add_argument('--input-folder', '-i', required=True, type=str,
                         help='Folder with input images')
     parser.add_argument("--attack", "-a", required=True, help="Attack type")
+    parser.add_argument("--name", "-n", required=False, help="Experiment name")
     parser.add_argument('--save-images', '-s', action=argparse.BooleanOptionalAction,
                         default=False, help='Save attacked encoded images')
 
@@ -53,6 +54,9 @@ def main():
 
     hidden_net, hidden_config, train_options = load_model(
         args.options_file, args.checkpoint_file, device)
+
+    if args.name:
+        train_options.experiment_name = args.name
 
     # get last part of folder path
     folder_name = os.path.basename(os.path.normpath(args.input_folder))
