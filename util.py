@@ -109,7 +109,7 @@ def save_checkpoint(model: Hidden, experiment_name: str, epoch: int, checkpoint_
 def load_last_checkpoint(checkpoint_folder):
     """ Load the last checkpoint from the given folder """
     last_checkpoint_file = last_checkpoint_from_folder(checkpoint_folder)
-    checkpoint = torch.load(last_checkpoint_file)
+    checkpoint = torch.load(last_checkpoint_file, map_location=torch.device('cpu'))
 
     return checkpoint, last_checkpoint_file
 
