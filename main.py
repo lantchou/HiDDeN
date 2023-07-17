@@ -47,6 +47,9 @@ def main():
     new_run_parser.add_argument('--noise', nargs='*', action=NoiseArgParser,
                                 help="Noise layers configuration. Use quotes when specifying configuration, e.g. 'cropout((0.55, 0.6), (0.55, 0.6))'")
 
+    new_run_parser.add_argument('--checkpoint-file', required=False, default=None,
+                                type=str, help='Optional checkpoint file to start from.')
+
     new_run_parser.set_defaults(tensorboard=False)
     new_run_parser.set_defaults(enable_fp16=False)
 
@@ -114,6 +117,8 @@ def main():
             pickle.dump(hidden_config, f)
 
 
+
+
     logging.basicConfig(level=logging.INFO,
                         format='%(message)s',
                         handlers=[
@@ -137,6 +142,10 @@ def main():
         # if we are continuing, we have to load the model params
         assert checkpoint is not None
         logging.info(f'Loading checkpoint from file {loaded_checkpoint_file_name}')
+        util.model_from_checkpoint(model, checkpoint)
+    elif args.checkpoint_file is not None:
+        logging.info(f'Loading checkpoint from file {args.checkpoint_file}')
+        checkpoint = torch.load(args.checkpoint_file, map_location=device)
         util.model_from_checkpoint(model, checkpoint)
 
     logging.info('HiDDeN model: {}\n'.format(model.to_string()))
