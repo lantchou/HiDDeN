@@ -73,12 +73,10 @@ def zigzag_indices(n):
 def get_jpeg_yuv_filter_mask(image_shape: tuple, window_size: int, keep_count: int):
     mask = np.zeros((window_size, window_size), dtype=np.uint8)
 
-    # index_order = sorted(((x, y) for x in range(window_size) for y in range(window_size)),
-    #                      key=lambda p: (p[0] + p[1], -p[1] if (p[0] + p[1]) % 2 else p[1]))
-    indeces = zigzag_indices(keep_count)
-    print(indeces)
+    index_order = sorted(((x, y) for x in range(window_size) for y in range(window_size)),
+                         key=lambda p: (p[0] + p[1], -p[1] if (p[0] + p[1]) % 2 else p[1]))
 
-    for i, j in indeces:
+    for i, j in index_order[:keep_count]:
         mask[i, j] = 1
 
     return np.tile(mask, (int(np.ceil(image_shape[0] / window_size)),
@@ -140,7 +138,6 @@ class JpegCompression(nn.Module):
         if self.jpeg_mask is None or requested_shape > self.jpeg_mask.shape[1:]:
             self.jpeg_mask = torch.empty((3,) + requested_shape, device=self.device)
             for channel, weights_to_keep in enumerate(self.yuv_keep_weights):
-                print('Creating mask for channel', channel, 'with', weights_to_keep, 'weights.')
                 mask = torch.from_numpy(get_jpeg_yuv_filter_mask(requested_shape, 8, weights_to_keep))
                 self.jpeg_mask[channel] = mask
 
@@ -183,8 +180,6 @@ class JpegCompression(nn.Module):
 
         noised_image = noised_and_cover[0]
 
-        # save_images(noised_and_cover[0], "input.png", ".")
-
         # pad the image so that we can do dct on 8x8 blocks
         pad_height = (8 - noised_image.shape[2] % 8) % 8
         pad_width = (8 - noised_image.shape[3] % 8) % 8
@@ -214,7 +209,6 @@ class JpegCompression(nn.Module):
         # un-pad
         noised_and_cover[0] = image_ret_padded[:, :, :image_ret_padded.shape[2] - pad_height,
                               :image_ret_padded.shape[3] - pad_width].clone()
-        # save_images(noised_and_cover[0], "output.png", ".")
 
         return noised_and_cover
 
