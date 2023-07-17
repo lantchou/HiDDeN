@@ -61,7 +61,7 @@ def main():
     continue_parser.add_argument('--data-dir', '-d', required=False, type=str,
                                  help='The directory where the data is stored. Specify a value only if you want to override the previous value.')
     continue_parser.add_argument('--epochs', '-e', required=False, type=int,
-                                help='Number of epochs to run the simulation. Specify a value only if you want to override the previous value.')
+                                 help='Number of epochs to run the simulation. Specify a value only if you want to override the previous value.')
     continue_parser.add_argument('--batch-size', '-b', required=False, default=None, type=int, help='The batch size.')
     continue_parser.add_argument('--learning-rate', type=float, required=False, default=None, help='The learning rate.')
     # continue_parser.add_argument('--tensorboard', action='store_true',
@@ -82,7 +82,14 @@ def main():
         if args.learning_rate is not None:
             hidden_config.learning_rate = args.learning_rate
 
-        checkpoint, loaded_checkpoint_file_name = util.load_last_checkpoint(os.path.join(this_run_folder, 'checkpoints'))
+        if not hasattr(hidden_config, 'batch_size'):
+            hidden_config.batch_size = 12
+
+        if not hasattr(hidden_config, 'learning_rate'):
+            hidden_config.learning_rate = 1e-3
+
+        checkpoint, loaded_checkpoint_file_name = util.load_last_checkpoint(
+            os.path.join(this_run_folder, 'checkpoints'))
         train_options.start_epoch = checkpoint['epoch'] + 1
         if args.data_dir is not None:
             train_options.train_folder = os.path.join(args.data_dir, 'train')
@@ -127,9 +134,6 @@ def main():
             pickle.dump(train_options, f)
             pickle.dump(noise_config, f)
             pickle.dump(hidden_config, f)
-
-
-
 
     logging.basicConfig(level=logging.INFO,
                         format='%(message)s',
