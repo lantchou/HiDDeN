@@ -1,6 +1,8 @@
 import random
+import torch
 import torch.nn as nn
 from DiffJPEG import DiffJPEG
+import torchvision
 
 
 class JpegDiff(nn.Module):
@@ -8,7 +10,7 @@ class JpegDiff(nn.Module):
     Noise layer which applies a differentiable JPEG approximation to the noised image within a 0-100 QF range.
     """
 
-    def __init__(self, device, height=128, width=128, qf: int | tuple[int, int] = (70, 100)):
+    def __init__(self, device, height=128, width=128, qf: int | tuple[int, int] = 50):
         super(JpegDiff, self).__init__()
         self.device = device
         if isinstance(qf, int):
@@ -26,9 +28,13 @@ class JpegDiff(nn.Module):
         else:
             jpeg = self.jpeg
 
-        # apply jpeg noise layer
-        images = (noised_and_cover[0] + 1) / 2  # to [0, 1] range
-        jpeg_images = jpeg(images)
-        noised_and_cover[0] = jpeg_images * 2 - 1  # back to [-1, 1] range
+        # save image as tensor in range [0, 1]
+        # torchvision.utils.save_image((noised_and_cover[0] + 1) / 2, 'input.png')
+
+        # apply jpeg noise layer after scaling to [0, 1]
+        noised_and_cover[0] = jpeg((noised_and_cover[0].clip(-1, 1) + 1) / 2)
+
+        # save image as tensor in range [0, 1]
+        # torchvision.utils.save_image(noised_and_cover[0], 'output.png')
 
         return noised_and_cover
