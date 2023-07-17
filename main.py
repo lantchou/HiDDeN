@@ -77,13 +77,10 @@ def main():
         train_options, hidden_config, noise_config = util.load_options(options_file)
 
         if args.batch_size is not None:
-            hidden_config.batch_size = args.batch_size
+            train_options.batch_size = args.batch_size
 
         if args.learning_rate is not None:
             hidden_config.learning_rate = args.learning_rate
-
-        if not hasattr(hidden_config, 'batch_size'):
-            hidden_config.batch_size = 12
 
         if not hasattr(hidden_config, 'learning_rate'):
             hidden_config.learning_rate = 1e-3
