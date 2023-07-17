@@ -63,6 +63,7 @@ def main():
     continue_parser.add_argument('--epochs', '-e', required=False, type=int,
                                 help='Number of epochs to run the simulation. Specify a value only if you want to override the previous value.')
     continue_parser.add_argument('--batch-size', '-b', required=False, default=None, type=int, help='The batch size.')
+    continue_parser.add_argument('--learning-rate', type=float, required=False, default=None, help='The learning rate.')
     # continue_parser.add_argument('--tensorboard', action='store_true',
     #                             help='Override the previous setting regarding tensorboard logging.')
 
@@ -74,6 +75,13 @@ def main():
         this_run_folder = args.folder
         options_file = os.path.join(this_run_folder, 'options-and-config.pickle')
         train_options, hidden_config, noise_config = util.load_options(options_file)
+
+        if args.batch_size is not None:
+            hidden_config.batch_size = args.batch_size
+
+        if args.learning_rate is not None:
+            hidden_config.learning_rate = args.learning_rate
+
         checkpoint, loaded_checkpoint_file_name = util.load_last_checkpoint(os.path.join(this_run_folder, 'checkpoints'))
         train_options.start_epoch = checkpoint['epoch'] + 1
         if args.data_dir is not None:
