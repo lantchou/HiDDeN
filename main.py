@@ -39,7 +39,7 @@ def main():
                                 help='The folder from where to continue a previous run. Leave blank if you are starting a new experiment.')
     # parser.add_argument('--tensorboard', dest='tensorboard', action='store_true',
     #                     help='If specified, use adds a Tensorboard log. On by default')
-    new_run_parser.add_argument('--tensorboard', action='store_true',
+    new_run_parser.add_argument('--tensorboard', action='store_true', default=True,
                                 help='Use to switch on Tensorboard logging.')
     new_run_parser.add_argument('--enable-fp16', dest='enable_fp16', action='store_true',
                                 help='Enable mixed-precision training.')
