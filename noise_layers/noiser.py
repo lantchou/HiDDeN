@@ -23,14 +23,8 @@ class Noiser(nn.Module):
             if type(layer) is str:
                 if layer == 'JpegPlaceholder':
                     self.noise_layers.append(JpegCompression(device))
-                elif layer == 'Rotate':
-                    self.noise_layers.append(Rotate())
-                elif layer == 'GaussianBlur':
-                    self.noise_layers.append(GaussianBlur())
                 elif layer == 'Mirror':
                     self.noise_layers.append(Mirror())
-                elif layer == 'Translate':
-                    self.noise_layers.append(Translate())
                 elif layer == 'Shear':
                     self.noise_layers.append(Shear())
                 else:

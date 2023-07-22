@@ -11,6 +11,7 @@ from noise_layers.jpeg_compression import JpegCompression
 from noise_layers.rotate import Rotate
 from noise_layers.gaussian_blur import GaussianBlur
 from noise_layers.jpeg_diff import JpegDiff
+from noise_layers.translate import Translate
 
 
 def parse_pair(match_groups):
@@ -44,15 +45,15 @@ def parse_dropout(dropout_command):
 
 
 def parse_resize(resize_command):
-    matches = re.match(r'resize\((\d+\.*\d*,\d+\.*\d*)\)', resize_command)
+    matches = re.match(r'resize\((\d+,\d+)\)', resize_command)
     ratios = matches.groups()[0].split(',')
-    min_ratio = float(ratios[0])
-    max_ratio = float(ratios[1])
+    min_ratio = int(ratios[0])
+    max_ratio = int(ratios[1])
     return Resize((min_ratio, max_ratio))
 
 
 def parse_rotate(rotate_command):
-    matches = re.match(r'rotate\((\d+\.*\d*,\d+\.*\d*)\)', rotate_command)
+    matches = re.match(r'rotate\((\d+,\d+)\)', rotate_command)
     angles = matches.groups()[0].split(',')
     min_angle = int(angles[0])
     max_angle = int(angles[1])
@@ -71,6 +72,13 @@ def parse_jpeg_diff(jpeg_command, device):
     quality = int(matches.groups()[0])
     return JpegDiff(device, quality=quality)
 
+
+def parse_translate(translate_command):
+    matches = re.match(r'translate\((\d+\.*\d*,\d+\.*\d*)\)', translate_command)
+    ratios = matches.groups()[0].split(',')
+    min_ratio = float(ratios[0])
+    max_ratio = float(ratios[1])
+    return Translate((min_ratio, max_ratio))
 
 class NoiseArgParser(argparse.Action):
     def __init__(self,
@@ -137,7 +145,7 @@ class NoiseArgParser(argparse.Action):
             elif command[:len('mirror')] == 'mirror':
                 layers.append('Mirror')
             elif command[:len('translate')] == 'translate':
-                layers.append('Translate')
+                layers.append(parse_translate(command))
             elif command[:len('shear')] == 'shear':
                 layers.append('Shear')
             elif command[:len('identity')] == 'identity':
