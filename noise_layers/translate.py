@@ -17,7 +17,6 @@ class Translate(nn.Module):
         self.max_translate_ratio = max_translate_ratio
 
     def forward(self, noised_and_cover):
-
         translate_ratio = random.uniform(self.min_translate_ratio, self.max_translate_ratio)
         dy = int(noised_and_cover[0].shape[2] * translate_ratio)
         dx = int(noised_and_cover[0].shape[3] * translate_ratio)

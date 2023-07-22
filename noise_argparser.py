@@ -78,7 +78,7 @@ def parse_translate(translate_command):
     ratios = matches.groups()[0].split(',')
     min_ratio = float(ratios[0])
     max_ratio = float(ratios[1])
-    return Translate((min_ratio, max_ratio))
+    return Translate(min_ratio, max_ratio)
 
 class NoiseArgParser(argparse.Action):
     def __init__(self,
