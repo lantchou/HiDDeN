@@ -73,3 +73,6 @@ class Crop(nn.Module):
                w_start: w_end].clone()
 
         return noised_and_cover
+
+    def __repr__(self):
+        return f"Crop(height_ratio_range={self.height_ratio_range}, width_ratio_range={self.width_ratio_range})"
