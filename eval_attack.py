@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 
 from model.hidden import Hidden
 from util import load_model
+from noise_layers.crop import get_random_rectangle_inside
 
 RESULTS_FILENAME = "results.txt"
 GRAPH_FILENAME = "graph.png"
@@ -72,20 +73,20 @@ def main():
     os.makedirs(results_dir)
     csv_header = ["Image", "No attack"]
     error_rates_no_attack, _, _, _ = eval(images, hidden_net, args.batch_size,
-                                       hidden_config.message_length, lambda img: img, device)
+                                          hidden_config.message_length, lambda img: img, device)
     error_rates_all: List[List[float]] = [error_rates_no_attack]
     if args.attack == "rotate":
-        angles = [2, 5, 10, 20]
+        angles = [2, 5, 10, 20, 30, 45, 60, 90]
         avg_error_per_angle = []
         for angle in angles:
             # randomly switch sign of angle
             if random.random() < 0.5:
                 angle = -angle
             error_rates, error_avg, ssim_avg, attack_images = eval(images, hidden_net,
-                                                         args.batch_size, hidden_config.message_length,
-                                                         lambda img: TF.rotate(
-                                                             img, angle),
-                                                         device)
+                                                                   args.batch_size, hidden_config.message_length,
+                                                                   lambda img: TF.rotate(
+                                                                       img, angle),
+                                                                   device)
 
             avg_error_per_angle.append(error_avg)
 
@@ -110,14 +111,14 @@ def main():
             crop_top = random.randrange(0, height - crop_height)
             crop_left = random.randrange(0, width - crop_width)
             error_rates, error_avg, ssim_avg, attack_images = eval(images, hidden_net,
-                                                         args.batch_size, hidden_config.message_length,
-                                                         lambda img: TF.crop(
-                                                             img,
-                                                             crop_top,
-                                                             crop_left,
-                                                             crop_height,
-                                                             crop_width),
-                                                         device)
+                                                                   args.batch_size, hidden_config.message_length,
+                                                                   lambda img: TF.crop(
+                                                                       img,
+                                                                       crop_top,
+                                                                       crop_left,
+                                                                       crop_height,
+                                                                       crop_width),
+                                                                   device, False)
 
             avg_error_per_ratio.append(error_avg)
 
@@ -130,19 +131,18 @@ def main():
 
             print_and_write(f"Results for {crop_ratio * 100}% crop", results_path)
             print_and_write(f"\t Average bit accuracy = {(1 - error_avg) * 100:.5f}%", results_path)
-            print_and_write(f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
 
         crop_ratios_percent = [crop_ratio * 100 for crop_ratio in crop_ratios]
-        save_graph(graph_path, crop_ratios_percent, avg_error_per_ratio, "Crop ratio (%)")
+        save_graph(graph_path, crop_ratios_percent, avg_error_per_ratio, "Crop ratio (%)", True)
     elif args.attack == "jpeg":
         qfs = [100, 90, 80, 70, 60, 50, 40, 30, 20, 10]
         avg_error_per_qf = []
         for qf in qfs:
             error_rates, error_avg, ssim_avg, attack_images = eval(images, hidden_net,
-                                                         args.batch_size, hidden_config.message_length,
-                                                         lambda img: jpeg_compress(
-                                                             img, qf, device),
-                                                         device)
+                                                                   args.batch_size, hidden_config.message_length,
+                                                                   lambda img: jpeg_compress(
+                                                                       img, qf, device),
+                                                                   device)
 
             avg_error_per_qf.append(error_avg)
 
@@ -165,9 +165,10 @@ def main():
             resize_height = math.floor(height * scale)
             resize_width = math.floor(width * scale)
             error_rates, error_avg, ssim_avg, attack_images = eval(images, hidden_net,
-                                                         args.batch_size, hidden_config.message_length,
-                                                         lambda img: TF.resize(img, [resize_height, resize_width]),
-                                                         device)
+                                                                   args.batch_size, hidden_config.message_length,
+                                                                   lambda img: TF.resize(img,
+                                                                                         [resize_height, resize_width]),
+                                                                   device)
 
             avg_error_per_scale.append(error_avg)
 
@@ -192,11 +193,11 @@ def main():
             if random.random() < 0.5:
                 angle = -angle
             error_rates, error_avg, ssim_avg, attack_images = eval(images,
-                                                         hidden_net,
-                                                         args.batch_size,
-                                                         hidden_config.message_length,
-                                                         lambda img: TF.affine(img, 0, [0, 0], 1, angle),
-                                                         device)
+                                                                   hidden_net,
+                                                                   args.batch_size,
+                                                                   hidden_config.message_length,
+                                                                   lambda img: TF.affine(img, 0, [0, 0], 1, angle),
+                                                                   device)
 
             avg_error_per_angle.append(error_avg)
 
@@ -228,11 +229,11 @@ def main():
                 dy = -dy
 
             error_rates, error_avg, ssim_avg, attack_images = eval(images,
-                                                         hidden_net,
-                                                         args.batch_size,
-                                                         hidden_config.message_length,
-                                                         lambda img: TF.affine(img, 0, [dx, dy], 1, [0, 0]),
-                                                         device)
+                                                                   hidden_net,
+                                                                   args.batch_size,
+                                                                   hidden_config.message_length,
+                                                                   lambda img: TF.affine(img, 0, [dx, dy], 1, [0, 0]),
+                                                                   device)
 
             avg_error_per_dr.append(error_avg)
 
@@ -251,9 +252,9 @@ def main():
         save_graph(graph_path, drs_percent, avg_error_per_dr, "Translation ratio (Percentage)")
     elif args.attack == "mirror":
         error_rates, error_avg, ssim_avg, attack_images = eval(images, hidden_net,
-                                                     args.batch_size, hidden_config.message_length,
-                                                     lambda img: TF.hflip(img),
-                                                     device)
+                                                               args.batch_size, hidden_config.message_length,
+                                                               lambda img: TF.hflip(img),
+                                                               device)
 
         error_rates_all.append(error_rates)
         csv_header.append(f"Mirrored")
@@ -270,9 +271,10 @@ def main():
         avg_error_per_sigma = []
         for sigma in sigmas:
             error_rates, error_avg, ssim_avg, attack_images = eval(images, hidden_net,
-                                                         args.batch_size, hidden_config.message_length,
-                                                         lambda img: TF.gaussian_blur(img, [sigma, sigma], [sigma]),
-                                                         device)
+                                                                   args.batch_size, hidden_config.message_length,
+                                                                   lambda img: TF.gaussian_blur(img, [sigma, sigma],
+                                                                                                [sigma]),
+                                                                   device)
 
             avg_error_per_sigma.append(error_avg)
 
@@ -288,12 +290,76 @@ def main():
             print_and_write(f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
 
         save_graph(graph_path, sigmas, avg_error_per_sigma, "Sigma")
+    elif args.attack == "cropout":
+        _, _, _, watermark_images = eval(images, hidden_net,
+                                         args.batch_size, hidden_config.message_length,
+                                         lambda img: img,
+                                         device)
+        keep_ratios = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
+        avg_error_per_keep_ratio = []
+        for keep_ratio in keep_ratios:
+            error_rates, error_avg, ssim_avg, attack_images = eval(images, hidden_net,
+                                                                   args.batch_size, hidden_config.message_length,
+                                                                   lambda img: cropout(
+                                                                       torch.stack(watermark_images),
+                                                                       images,
+                                                                       keep_ratio),
+                                                                   device)
+
+            avg_error_per_keep_ratio.append(error_avg)
+
+            error_rates_all.append(error_rates)
+            csv_header.append(f"Keep ratio = {keep_ratio * 100}%")
+
+            if args.save_images:
+                save_images(attack_images, filenames, os.path.join(
+                    results_dir, f"keep-ratio-{keep_ratio * 100:g}-percent"))
+
+            print_and_write(f"Results for cropout with keep ratio = {keep_ratio}", results_path)
+            print_and_write(f"\t Average bit accuracy = {(1 - error_avg) * 100:.5f}%", results_path)
+            print_and_write(f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
+
+        keep_ratios_percent = [keep_ratio * 100 for keep_ratio in keep_ratios]
+
+        save_graph(graph_path, keep_ratios_percent, avg_error_per_keep_ratio, "Keep ratio (%)", True)
+    elif args.attack == "dropout":
+        _, _, _, watermark_images = eval(images, hidden_net,
+                                         args.batch_size, hidden_config.message_length,
+                                         lambda img: img,
+                                         device)
+        keep_ratios = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
+        avg_error_per_keep_ratio = []
+        for keep_ratio in keep_ratios:
+            error_rates, error_avg, ssim_avg, attack_images = eval(images, hidden_net,
+                                                                   args.batch_size, hidden_config.message_length,
+                                                                   lambda img: dropout(
+                                                                       torch.stack(watermark_images),
+                                                                       images,
+                                                                       keep_ratio),
+                                                                   device)
+
+            avg_error_per_keep_ratio.append(error_avg)
+
+            error_rates_all.append(error_rates)
+            csv_header.append(f"Keep ratio = {keep_ratio * 100}%")
+
+            if args.save_images:
+                save_images(attack_images, filenames, os.path.join(
+                    results_dir, f"keep-ratio-{keep_ratio * 100:g}-percent"))
+
+            print_and_write(f"Results for dropout with keep ratio = {keep_ratio}", results_path)
+            print_and_write(f"\t Average bit accuracy = {(1 - error_avg) * 100:.5f}%", results_path)
+            print_and_write(f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
+
+        keep_ratios_percent = [keep_ratio * 100 for keep_ratio in keep_ratios]
+
+        save_graph(graph_path, keep_ratios_percent, avg_error_per_keep_ratio, "Keep ratio (%)", True)
     elif args.attack == "identity":
         # TODO do different arg parser flow for this case?
         error_rates, error_avg, ssim_avg, attack_images = eval(images, hidden_net,
-                                                     args.batch_size, hidden_config.message_length,
-                                                     lambda img: img,
-                                                     device)
+                                                               args.batch_size, hidden_config.message_length,
+                                                               lambda img: img,
+                                                               device)
 
         if args.save_images:
             save_images(attack_images,
@@ -331,7 +397,7 @@ def print_and_write(s: str, path: str):
         f.write(s + "\n")
 
 
-def eval(images, hidden_net: Hidden, batch_size, message_length, attack, device):
+def eval(images, hidden_net: Hidden, batch_size, message_length, attack, device, do_ssim=True):
     ssim = StructuralSimilarityIndexMeasure(data_range=2).to(device)
     image_count = images.shape[0]
     messages = np.random.choice([0, 1],
@@ -350,7 +416,7 @@ def eval(images, hidden_net: Hidden, batch_size, message_length, attack, device)
         batch_imgs_enc_att = attack(batch_imgs_enc)
         batch_msgs_dec = hidden_net.eval_decode_on_batch(batch_imgs_enc_att)
 
-        for img, enc_img, msg, msg_dec in zip(batch_imgs, batch_imgs_enc, batch_msgs, batch_msgs_dec):
+        for img, enc_img_att, msg, msg_dec in zip(batch_imgs, batch_imgs_enc_att, batch_msgs, batch_msgs_dec):
             msg_detached = msg.detach().cpu().numpy()
             msg_dec_rounded = msg_dec.detach().cpu().numpy().round().clip(0, 1)
             msg_error_count = np.sum(
@@ -359,8 +425,8 @@ def eval(images, hidden_net: Hidden, batch_size, message_length, attack, device)
             error_rates.append(msg_error_rate)
             error_count += msg_error_count
 
-            ssim_sum += ssim(enc_img.unsqueeze_(
-                0), img.unsqueeze_(0))
+            if do_ssim:
+                ssim_sum += ssim(enc_img_att.unsqueeze_(0), img.unsqueeze_(0))
 
         for att_img in batch_imgs_enc_att:
             attack_images.append(att_img)
@@ -398,6 +464,22 @@ def jpeg_compress(images: torch.Tensor, qf: int, device) -> Tensor:
             0))  # for some reason torchvision.transforms removes a dimension, and adding one again fixes it
 
     return torch.cat(jpeg_images).to(device)
+
+
+def cropout(watermark_images: torch.Tensor, cover_images: torch.Tensor, keep_ratio: float):
+    cropout_mask = torch.zeros_like(watermark_images)
+    h_start, h_end, w_start, w_end = get_random_rectangle_inside(image=watermark_images,
+                                                                 height_ratio_range=(keep_ratio, keep_ratio),
+                                                                 width_ratio_range=(keep_ratio, keep_ratio))
+    cropout_mask[:, :, h_start:h_end, w_start:w_end] = 1
+
+    return watermark_images * cropout_mask + cover_images * (1 - cropout_mask)
+
+def dropout(watermark_images: torch.Tensor, cover_images: torch.Tensor, keep_ratio: float):
+    mask = np.random.choice([0.0, 1.0], watermark_images.shape[2:], p=[1 - keep_ratio, keep_ratio])
+    mask_tensor = torch.tensor(mask, device=watermark_images.device, dtype=torch.float32)
+    mask_tensor = mask_tensor.expand_as(watermark_images)
+    return watermark_images * mask_tensor + cover_images * (1 - mask_tensor)
 
 
 def save_graph(path: str,
