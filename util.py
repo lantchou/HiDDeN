@@ -204,6 +204,10 @@ def write_losses(file_name, losses_accu, epoch, duration):
 def load_model(options_file, checkpoint_file, device):
     train_options, hidden_config, noise_config = load_options(
         options_file)
+
+    if not hasattr(hidden_config, "learning_rate"):
+        hidden_config.learning_rate = 1e-3
+
     noiser = Noiser(noise_config, device)
 
     checkpoint = torch.load(checkpoint_file, device)
