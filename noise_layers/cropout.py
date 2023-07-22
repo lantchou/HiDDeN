@@ -26,3 +26,6 @@ class Cropout(nn.Module):
 
         noised_and_cover[0] = noised_image * cropout_mask + cover_image * (1-cropout_mask)
         return  noised_and_cover
+
+    def __repr__(self):
+        return f"Cropout(height_ratio_range={self.height_ratio_range}, width_ratio_range={self.width_ratio_range})"

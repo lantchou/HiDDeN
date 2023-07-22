@@ -21,3 +21,5 @@ class Rotate(nn.Module):
         noised_and_cover[0] = TF.rotate(noised_image, angle)
 
         return noised_and_cover
+    def __repr__(self):
+        return f"Rotate(min_angle={self.min_angle}, max_angle={self.max_angle})"

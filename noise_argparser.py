@@ -1,5 +1,6 @@
 import argparse
 import re
+import torch
 from noise_layers.cropout import Cropout
 from noise_layers.crop import Crop
 from noise_layers.identity import Identity
@@ -8,6 +9,8 @@ from noise_layers.resize import Resize
 from noise_layers.quantization import Quantization
 from noise_layers.jpeg_compression import JpegCompression
 from noise_layers.rotate import Rotate
+from noise_layers.gaussian_blur import GaussianBlur
+from noise_layers.jpeg_diff import JpegDiff
 
 
 def parse_pair(match_groups):
@@ -56,6 +59,19 @@ def parse_rotate(rotate_command):
     return Rotate(min_angle, max_angle)
 
 
+def parse_blur(blur_command):
+    # parse single int between parentheses
+    matches = re.match(r'blur\((\d+)\)', blur_command)
+    sigma = int(matches.groups()[0])
+    return GaussianBlur(sigma)
+
+
+def parse_jpeg_diff(jpeg_command, device):
+    matches = re.match(r'diffjpeg\((\d+)\)', jpeg_command)
+    quality = int(matches.groups()[0])
+    return JpegDiff(device, quality=quality)
+
+
 class NoiseArgParser(argparse.Action):
     def __init__(self,
                  option_strings,
@@ -67,7 +83,8 @@ class NoiseArgParser(argparse.Action):
                  choices=None,
                  required=False,
                  help=None,
-                 metavar=None):
+                 metavar=None,
+                 device=torch.device('cpu'),):
         argparse.Action.__init__(self,
                                  option_strings=option_strings,
                                  dest=dest,
@@ -80,6 +97,7 @@ class NoiseArgParser(argparse.Action):
                                  help=help,
                                  metavar=metavar,
                                  )
+        self.device = device
 
     @staticmethod
     def parse_cropout_args(cropout_args):
@@ -109,15 +127,13 @@ class NoiseArgParser(argparse.Action):
             elif command[:len('jpeg')] == 'jpeg':
                 layers.append('JpegPlaceholder')
             elif command[:len('diffjpeg')] == 'diffjpeg':
-                layers.append('JpegDiff')
-            elif command[:len('2diffjpeg')] == '2diffjpeg':
-                layers.append('JpegDiff2')
+                layers.append(parse_jpeg_diff(command, self.device))
             elif command[:len('quant')] == 'quant':
                 layers.append('QuantizationPlaceholder')
             elif command[:len('rotate')] == 'rotate':
                 layers.append(parse_rotate(command))
             elif command[:len('blur')] == 'blur':
-                layers.append('GaussianBlur')
+                layers.append(parse_blur(command))
             elif command[:len('mirror')] == 'mirror':
                 layers.append('Mirror')
             elif command[:len('translate')] == 'translate':

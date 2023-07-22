@@ -23,3 +23,6 @@ class Resize(nn.Module):
                                     mode=self.interpolation_method)
 
         return noised_and_cover
+
+    def __repr__(self):
+        return f"Resize(resize_ratio_range=({self.resize_ratio_min}, {self.resize_ratio_max}), interpolation_method={self.interpolation_method})"

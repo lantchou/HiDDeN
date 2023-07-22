@@ -4,8 +4,6 @@ import torch.nn as nn
 import torch
 from noise_layers.identity import Identity
 from noise_layers.jpeg_compression import JpegCompression
-from noise_layers.jpeg_diff import JpegDiff
-from noise_layers.jpeg_diff_2 import JpegDiff2
 from noise_layers.rotate import Rotate
 from noise_layers.gaussian_blur import GaussianBlur
 from noise_layers.mirror import Mirror
@@ -25,10 +23,6 @@ class Noiser(nn.Module):
             if type(layer) is str:
                 if layer == 'JpegPlaceholder':
                     self.noise_layers.append(JpegCompression(device))
-                elif layer == 'JpegDiff':
-                    self.noise_layers.append(JpegDiff(device))
-                elif layer == 'JpegDiff2':
-                    self.noise_layers.append(JpegDiff2(device))
                 elif layer == 'Rotate':
                     self.noise_layers.append(Rotate())
                 elif layer == 'GaussianBlur':

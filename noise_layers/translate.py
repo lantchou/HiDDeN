@@ -24,3 +24,6 @@ class Translate(nn.Module):
 
         noised_and_cover[0] = TF.affine(noised_and_cover[0], angle=0, translate=[dx, dy], scale=1, shear=0)
         return noised_and_cover
+
+    def __repr__(self):
+        return f"Translate(min_translate_ratio={self.min_translate_ratio}, max_translate_ratio={self.max_translate_ratio})"

@@ -27,4 +27,5 @@ class Dropout(nn.Module):
         noised_image = noised_image * mask_tensor + cover_image * (1-mask_tensor)
         return [noised_image, cover_image]
 
-
+    def __repr__(self):
+        return f"Dropout(keep_ratio_range=({self.keep_min}, {self.keep_max}))"
