@@ -45,7 +45,7 @@ def parse_dropout(dropout_command):
 
 
 def parse_resize(resize_command):
-    matches = re.match(r'resize\((\d+,\d+)\)', resize_command)
+    matches = re.match(r'resize\((\d+\.*\d*,\d+\.*\d*)\)', resize_command)
     ratios = matches.groups()[0].split(',')
     min_ratio = int(ratios[0])
     max_ratio = int(ratios[1])
