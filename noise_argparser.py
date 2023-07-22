@@ -7,6 +7,7 @@ from noise_layers.dropout import Dropout
 from noise_layers.resize import Resize
 from noise_layers.quantization import Quantization
 from noise_layers.jpeg_compression import JpegCompression
+from noise_layers.rotate import Rotate
 
 
 def parse_pair(match_groups):
@@ -24,6 +25,7 @@ def parse_crop(crop_command):
     (hmin, hmax), (wmin, wmax) = parse_pair(matches.groups())
     return Crop((hmin, hmax), (wmin, wmax))
 
+
 def parse_cropout(cropout_command):
     matches = re.match(r'cropout\(\((\d+\.*\d*,\d+\.*\d*)\),\((\d+\.*\d*,\d+\.*\d*)\)\)', cropout_command)
     (hmin, hmax), (wmin, wmax) = parse_pair(matches.groups())
@@ -37,12 +39,21 @@ def parse_dropout(dropout_command):
     keep_max = float(ratios[1])
     return Dropout((keep_min, keep_max))
 
+
 def parse_resize(resize_command):
     matches = re.match(r'resize\((\d+\.*\d*,\d+\.*\d*)\)', resize_command)
     ratios = matches.groups()[0].split(',')
     min_ratio = float(ratios[0])
     max_ratio = float(ratios[1])
     return Resize((min_ratio, max_ratio))
+
+
+def parse_rotate(rotate_command):
+    matches = re.match(r'rotate\((\d+\.*\d*,\d+\.*\d*)\)', rotate_command)
+    angles = matches.groups()[0].split(',')
+    min_angle = int(angles[0])
+    max_angle = int(angles[1])
+    return Rotate(min_angle, max_angle)
 
 
 class NoiseArgParser(argparse.Action):
@@ -104,7 +115,7 @@ class NoiseArgParser(argparse.Action):
             elif command[:len('quant')] == 'quant':
                 layers.append('QuantizationPlaceholder')
             elif command[:len('rotate')] == 'rotate':
-                layers.append('Rotate')
+                layers.append(parse_rotate(command))
             elif command[:len('blur')] == 'blur':
                 layers.append('GaussianBlur')
             elif command[:len('mirror')] == 'mirror':
