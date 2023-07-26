@@ -405,7 +405,7 @@ class decompress_jpeg(nn.Module):
 ##########################
 
 class JpegDiff(nn.Module):
-    def __init__(self, device, differentiable=True, quality=80):
+    def __init__(self, device_type: str, differentiable=True, quality=80):
         ''' Initialize the DiffJPEG layer
         Inputs:
             height(int): Original image hieght
@@ -420,6 +420,7 @@ class JpegDiff(nn.Module):
         else:
             rounding = torch.round
         factor = quality_to_factor(quality)
+        device = torch.device(device_type)
         self.compress = compress_jpeg(rounding=rounding, factor=factor, device=device)
         self.decompress = decompress_jpeg(factor=factor, device=device)
         self.quality = quality

@@ -67,10 +67,10 @@ def parse_blur(blur_command):
     return GaussianBlur(sigma)
 
 
-def parse_jpeg_diff(jpeg_command, device):
+def parse_jpeg_diff(jpeg_command, device: torch.device):
     matches = re.match(r'diffjpeg\((\d+)\)', jpeg_command)
     quality = int(matches.groups()[0])
-    return JpegDiff(device, quality=quality)
+    return JpegDiff(device.type, quality=quality)
 
 
 def parse_translate(translate_command):
