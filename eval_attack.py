@@ -87,7 +87,7 @@ def main():
             error_rates, error_avg, ssim_avg, attack_images = eval(images, hidden_net,
                                                                    args.batch_size, hidden_config.message_length,
                                                                    lambda img: TF.rotate(
-                                                                       img, angle),
+                                                                       img, angle, interpolation=TF.InterpolationMode.BILINEAR),
                                                                    device)
 
             avg_error_per_angle.append(error_avg)
@@ -201,7 +201,7 @@ def main():
         save_graph(graph_path, scales, avg_error_per_scale,
                    "Resize scale (x and y)")
     elif args.attack == "shear":
-        angles = [2, 5, 10, 15, 20, 30]
+        angles = [2, 5, 10, 15, 20, 30, 45, 60, 75]
         avg_error_per_angle = []
         for angle in angles:
 
@@ -213,7 +213,7 @@ def main():
                                                                    args.batch_size,
                                                                    hidden_config.message_length,
                                                                    lambda img: TF.affine(
-                                                                       img, 0, [0, 0], 1, angle),
+                                                                       img, 0, [0, 0], 1, angle, interpolation=TF.InterpolationMode.BILINEAR),
                                                                    device)
 
             avg_error_per_angle.append(error_avg)
@@ -457,7 +457,8 @@ def eval(images, hidden_net: Hidden, batch_size, message_length, attack, device,
         batch_msgs = messages[i:end]
         batch_imgs_enc = hidden_net.eval_encode_on_batch(
             batch_imgs, batch_msgs)
-        batch_imgs_enc_att = attack(batch_imgs_enc)
+
+        batch_imgs_enc_att = attack((batch_imgs_enc + 1) / 2) * 2 - 1
         batch_msgs_dec = hidden_net.eval_decode_on_batch(batch_imgs_enc_att)
 
         for img, enc_img_att, msg, msg_dec in zip(batch_imgs, batch_imgs_enc_att, batch_msgs, batch_msgs_dec):
