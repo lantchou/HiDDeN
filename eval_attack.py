@@ -180,7 +180,7 @@ def main():
                                                                    args.batch_size, hidden_config.message_length,
                                                                    lambda img: TF.resize(img,
                                                                                          [resize_height, resize_width]),
-                                                                   device)
+                                                                   device, False)
 
             avg_error_per_scale.append(error_avg)
 
@@ -195,8 +195,6 @@ def main():
                 f"Results for resize with scale = {scale}", results_path)
             print_and_write(
                 f"\t Average bit accuracy = {(1 - error_avg) * 100:.5f}%", results_path)
-            print_and_write(
-                f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
 
         save_graph(graph_path, scales, avg_error_per_scale,
                    "Resize scale (x and y)")
