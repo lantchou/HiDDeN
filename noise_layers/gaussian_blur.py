@@ -3,7 +3,7 @@ import torchvision.transforms.functional as TF
 
 class GaussianBlur(nn.Module):
     """
-    Apply gaussian blur with random sigma to image.
+    Apply gaussian blur with given sigma to image.
     """
 
     def __init__(self, sigma):
