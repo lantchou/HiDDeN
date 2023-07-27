@@ -115,3 +115,4 @@ websocket-client==1.4.2
 Werkzeug==2.2.2
 widgetsnbextension==4.0.4
 invisible-watermark==0.2.0
+onnxruntime==1.15.1
