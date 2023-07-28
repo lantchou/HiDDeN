@@ -179,7 +179,7 @@ def main():
             error_rates, error_avg, ssim_avg, attack_images = eval(images, hidden_net,
                                                                    args.batch_size, hidden_config.message_length,
                                                                    lambda img: TF.resize(img,
-                                                                                         [resize_height, resize_width]),
+                                                                                         [resize_height, resize_width], interpolation=TF.InterpolationMode.NEAREST),
                                                                    device, False)
 
             avg_error_per_scale.append(error_avg)
@@ -286,7 +286,7 @@ def main():
 
         if args.save_images:
             save_images(attack_images, filenames, os.path.join(
-                results_dir, f"reflected"))
+                results_dir, f"mirrored"))
 
         print_and_write(f"Results for mirrored", results_path)
         print_and_write(
@@ -294,45 +294,40 @@ def main():
         print_and_write(
             f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
     elif args.attack == "blur":
-        sigmas = [1, 3, 5, 7, 9]
-        avg_error_per_sigma = []
-        for sigma in sigmas:
+        kernel_sizes = [3, 5, 7, 9]
+        avg_error_per_ks = []
+        for ks in kernel_sizes:
             error_rates, error_avg, ssim_avg, attack_images = eval(images, hidden_net,
                                                                    args.batch_size, hidden_config.message_length,
-                                                                   lambda img: TF.gaussian_blur(img, [sigma, sigma],
-                                                                                                [sigma]),
+                                                                   lambda img: TF.gaussian_blur(
+                                                                       img, [ks, ks]),
                                                                    device)
 
-            avg_error_per_sigma.append(error_avg)
+            avg_error_per_ks.append(error_avg)
 
             error_rates_all.append(error_rates)
-            csv_header.append(f"Sigma = {sigma}")
+            csv_header.append(f"Kernel size = {ks}")
 
             if args.save_images:
                 save_images(attack_images, filenames, os.path.join(
-                    results_dir, f"sigma-{sigma}"))
+                    results_dir, f"kernel-size-{ks}"))
 
             print_and_write(
-                f"Results for blur with sigma = {sigma}", results_path)
+                f"Results for blur with kernel size = {ks}", results_path)
             print_and_write(
                 f"\t Average bit accuracy = {(1 - error_avg) * 100:.5f}%", results_path)
             print_and_write(
                 f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
 
-        save_graph(graph_path, sigmas, avg_error_per_sigma, "Sigma")
+        save_graph(graph_path, kernel_sizes, avg_error_per_ks, "Kernel size")
     elif args.attack == "cropout":
-        _, _, _, watermark_images = eval(images, hidden_net,
-                                         args.batch_size, hidden_config.message_length,
-                                         lambda img: img,
-                                         device)
         keep_ratios = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
         avg_error_per_keep_ratio = []
         for keep_ratio in keep_ratios:
             error_rates, error_avg, ssim_avg, attack_images = eval(images, hidden_net,
                                                                    args.batch_size, hidden_config.message_length,
                                                                    lambda img: cropout(
-                                                                       torch.stack(
-                                                                           watermark_images),
+                                                                       img,
                                                                        images,
                                                                        keep_ratio),
                                                                    device)
@@ -368,8 +363,7 @@ def main():
             error_rates, error_avg, ssim_avg, attack_images = eval(images, hidden_net,
                                                                    args.batch_size, hidden_config.message_length,
                                                                    lambda img: dropout(
-                                                                       torch.stack(
-                                                                           watermark_images),
+                                                                       img,
                                                                        images,
                                                                        keep_ratio),
                                                                    device)
