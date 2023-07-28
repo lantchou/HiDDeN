@@ -70,7 +70,7 @@ def parse_blur(blur_command):
 def parse_jpeg_diff(jpeg_command, device: torch.device):
     matches = re.match(r'diffjpeg\((\d+)\)', jpeg_command)
     quality = int(matches.groups()[0])
-    return JpegDiff(device.type, quality=quality)
+    return JpegDiff(device, quality=quality)
 
 
 def parse_translate(translate_command):
@@ -92,7 +92,7 @@ class NoiseArgParser(argparse.Action):
                  required=False,
                  help=None,
                  metavar=None,
-                 device=torch.device('cpu'),):
+                 device_type="cpu",):
         argparse.Action.__init__(self,
                                  option_strings=option_strings,
                                  dest=dest,
@@ -105,7 +105,7 @@ class NoiseArgParser(argparse.Action):
                                  help=help,
                                  metavar=metavar,
                                  )
-        self.device = device
+        self.device = torch.device(device_type)
 
     @staticmethod
     def parse_cropout_args(cropout_args):

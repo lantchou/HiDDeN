@@ -44,7 +44,7 @@ def main():
     new_run_parser.add_argument('--enable-fp16', dest='enable_fp16', action='store_true',
                                 help='Enable mixed-precision training.')
 
-    new_run_parser.add_argument('--noise', nargs='*', action=NoiseArgParser, device=device,
+    new_run_parser.add_argument('--noise', nargs='*', action=NoiseArgParser, device_type=device.type,
                                 help="Noise layers configuration. Use quotes when specifying configuration, e.g. 'cropout((0.55, 0.6), (0.55, 0.6))'")
 
     new_run_parser.add_argument('--checkpoint-file', required=False, default=None,
