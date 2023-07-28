@@ -61,10 +61,10 @@ def parse_rotate(rotate_command):
 
 
 def parse_blur(blur_command):
-    # parse single int between parentheses
-    matches = re.match(r'blur\((\d+)\)', blur_command)
-    sigma = int(matches.groups()[0])
-    return GaussianBlur(sigma)
+    # parse list of ints between parentheses, separated by comma's. there is at least one int
+    matches = re.match(r'blur\((\d+(,\d+)*)\)', blur_command)
+    kernal_sizes = matches.groups()[0].replace(" ", "").split(',')
+    return GaussianBlur([int(k) for k in kernal_sizes])
 
 
 def parse_jpeg_diff(jpeg_command, device: torch.device):
