@@ -179,7 +179,7 @@ def main():
             error_rates, error_avg, ssim_avg, attack_images = eval(images, hidden_net,
                                                                    args.batch_size, hidden_config.message_length,
                                                                    lambda img: TF.resize(img,
-                                                                                         [resize_height, resize_width], interpolation=TF.InterpolationMode.NEAREST),
+                                                                                         [resize_height, resize_width], interpolation=TF.InterpolationMode.BILINEAR),
                                                                    device, False)
 
             avg_error_per_scale.append(error_avg)
