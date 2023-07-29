@@ -25,13 +25,15 @@ def parse_pair(match_groups):
 
 
 def parse_crop(crop_command):
-    matches = re.match(r'crop\(\((\d+\.*\d*,\d+\.*\d*)\),\((\d+\.*\d*,\d+\.*\d*)\)\)', crop_command)
+    matches = re.match(
+        r'crop\(\((\d+\.*\d*,\d+\.*\d*)\),\((\d+\.*\d*,\d+\.*\d*)\)\)', crop_command)
     (hmin, hmax), (wmin, wmax) = parse_pair(matches.groups())
     return Crop((hmin, hmax), (wmin, wmax))
 
 
 def parse_cropout(cropout_command):
-    matches = re.match(r'cropout\(\((\d+\.*\d*,\d+\.*\d*)\),\((\d+\.*\d*,\d+\.*\d*)\)\)', cropout_command)
+    matches = re.match(
+        r'cropout\(\((\d+\.*\d*,\d+\.*\d*)\),\((\d+\.*\d*,\d+\.*\d*)\)\)', cropout_command)
     (hmin, hmax), (wmin, wmax) = parse_pair(matches.groups())
     return Cropout((hmin, hmax), (wmin, wmax))
 
@@ -45,11 +47,17 @@ def parse_dropout(dropout_command):
 
 
 def parse_resize(resize_command):
-    matches = re.match(r'resize\((\d+\.*\d*,\d+\.*\d*)\)', resize_command)
+    # should start with resize and be followed by two floats between parentheses, separated by comma's, potentially followed by a comma and an interpolation method
+    matches = re.match(
+        r'resize\((\d+\.*\d*,\d+\.*\d*)(,\w+)?\)', resize_command)
     ratios = matches.groups()[0].split(',')
     min_ratio = float(ratios[0])
     max_ratio = float(ratios[1])
-    return Resize((min_ratio, max_ratio))
+    if matches.groups()[1] is not None:
+        interpolation_method = matches.groups()[1][1:]
+        return Resize((min_ratio, max_ratio), interpolation_method)
+    else:
+        return Resize((min_ratio, max_ratio))
 
 
 def parse_rotate(rotate_command):
@@ -74,11 +82,13 @@ def parse_jpeg_diff(jpeg_command, device: torch.device):
 
 
 def parse_translate(translate_command):
-    matches = re.match(r'translate\((\d+\.*\d*,\d+\.*\d*)\)', translate_command)
+    matches = re.match(
+        r'translate\((\d+\.*\d*,\d+\.*\d*)\)', translate_command)
     ratios = matches.groups()[0].split(',')
     min_ratio = float(ratios[0])
     max_ratio = float(ratios[1])
     return Translate(min_ratio, max_ratio)
+
 
 class NoiseArgParser(argparse.Action):
     def __init__(self,
@@ -152,5 +162,6 @@ class NoiseArgParser(argparse.Action):
                 # We are adding one Identity() layer in Noiser anyway
                 pass
             else:
-                raise ValueError('Command not recognized: \n{}'.format(command))
+                raise ValueError(
+                    'Command not recognized: \n{}'.format(command))
         setattr(namespace, self.dest, layers)
