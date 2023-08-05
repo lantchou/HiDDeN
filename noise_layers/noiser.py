@@ -25,8 +25,6 @@ class Noiser(nn.Module):
                     self.noise_layers.append(JpegCompression(device))
                 elif layer == 'Mirror':
                     self.noise_layers.append(Mirror())
-                elif layer == 'Shear':
-                    self.noise_layers.append(Shear())
                 else:
                     raise ValueError(f'Unknown layer string in Noiser.__init__().')
             else:

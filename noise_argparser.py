@@ -12,6 +12,7 @@ from noise_layers.rotate import Rotate
 from noise_layers.gaussian_blur import GaussianBlur
 from noise_layers.jpeg_diff import JpegDiff
 from noise_layers.translate import Translate
+from noise_layers.shear import Shear
 
 
 def parse_pair(match_groups):
@@ -88,6 +89,14 @@ def parse_translate(translate_command):
     min_ratio = float(ratios[0])
     max_ratio = float(ratios[1])
     return Translate(min_ratio, max_ratio)
+
+
+def parse_shear(shear_command):
+    matches = re.match(r'shear\((\d+\.*\d*,\d+\.*\d*)\)', shear_command)
+    ratios = matches.groups()[0].split(',')
+    min_angle = int(ratios[0])
+    max_angle = int(ratios[1])
+    return Shear(min_angle, max_angle)
 
 
 class NoiseArgParser(argparse.Action):
