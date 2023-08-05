@@ -166,7 +166,7 @@ class NoiseArgParser(argparse.Action):
             elif command[:len('translate')] == 'translate':
                 layers.append(parse_translate(command))
             elif command[:len('shear')] == 'shear':
-                layers.append('Shear')
+                layers.append(parse_shear(command))
             elif command[:len('identity')] == 'identity':
                 # We are adding one Identity() layer in Noiser anyway
                 pass
