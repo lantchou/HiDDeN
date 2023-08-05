@@ -21,5 +21,5 @@ class Shear(nn.Module):
         if random.random() < 0.5:
             angle = -angle
 
-        noised_and_cover[0] = TF.affine(noised_and_cover[0], angle=0, translate=[0, 0], scale=1, shear=angle)
+        noised_and_cover[0] = TF.affine(noised_and_cover[0], angle=0, translate=[0, 0], scale=1, shear=angle, interpolation=TF.InterpolationMode.BILINEAR)
         return noised_and_cover
