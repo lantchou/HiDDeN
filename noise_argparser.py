@@ -92,10 +92,10 @@ def parse_translate(translate_command):
 
 
 def parse_shear(shear_command):
-    matches = re.match(r'shear\((\d+\.*\d*,\d+\.*\d*)\)', shear_command)
-    ratios = matches.groups()[0].split(',')
-    min_angle = int(ratios[0])
-    max_angle = int(ratios[1])
+    matches = re.match(r'rotate\((\d+,\d+)\)', shear_command)
+    angles = matches.groups()[0].split(',')
+    min_angle = int(angles[0])
+    max_angle = int(angles[1])
     return Shear(min_angle, max_angle)
 
 
