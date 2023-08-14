@@ -22,6 +22,9 @@ from util import load_model
 from noise_layers.crop import get_random_rectangle_inside
 from test_model import random_crop
 
+from noise_layers.jpeg_compression import rgb2yuv
+from noise_layers.jpeg_compression import yuv2rgb
+
 RESULTS_FILENAME = "results.txt"
 GRAPH_FILENAME = "graph.png"
 
@@ -71,14 +74,13 @@ def main():
         folder_name,
         time.strftime('%Y.%m.%d--%H-%M-%S'))
     results_path = os.path.join(results_dir, RESULTS_FILENAME)
-    graph_path = os.path.join(results_dir, GRAPH_FILENAME)
     os.makedirs(results_dir)
     csv_header = ["Image", "No attack"]
     error_rates_no_attack, _, _, _ = eval(images, hidden_net, args.batch_size,
                                           hidden_config.message_length, lambda img: img, device)
     error_rates_all: List[List[float]] = [error_rates_no_attack]
     if args.attack == "rotate":
-        angles = [2, 5, 10, 20, 30, 45, 60, 90]
+        angles = [2, 5, 10, 15, 20, 25, 30, 35, 45, 50, 60, 70, 80, 90]
         avg_error_per_angle = []
         for angle in angles:
             # randomly switch sign of angle
@@ -105,10 +107,10 @@ def main():
             print_and_write(
                 f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
 
-        save_graph(graph_path, angles, avg_error_per_angle,
+        save_graph(results_dir, angles, avg_error_per_angle,
                    "Rotation angle (Degrees)")
     elif args.attack == "crop":
-        crop_ratios = [0.9, 0.7, 0.5, 0.3, 0.1]
+        crop_ratios = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
         avg_error_per_ratio = []
         for crop_ratio in crop_ratios:
             crop_width = math.floor(width * crop_ratio)
@@ -140,7 +142,7 @@ def main():
                 f"\t Average bit accuracy = {(1 - error_avg) * 100:.5f}%", results_path)
 
         crop_ratios_percent = [crop_ratio * 100 for crop_ratio in crop_ratios]
-        save_graph(graph_path, crop_ratios_percent,
+        save_graph(results_dir, crop_ratios_percent,
                    avg_error_per_ratio, "Crop ratio (%)", True)
     elif args.attack == "jpeg":
         qfs = [100, 90, 80, 70, 60, 50, 40, 30, 20, 10]
@@ -168,10 +170,11 @@ def main():
             print_and_write(
                 f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
 
-        save_graph(graph_path, qfs, avg_error_per_qf,
+        save_graph(results_dir, qfs, avg_error_per_qf,
                    "Quality factor (QF)", True)
     elif args.attack == "resize":
-        scales = [0.25, 0.5, 0.75, 1.25, 1.5, 1.75, 2]
+        # scales = [0.25, 0.5, 0.75, 1.25, 1.5, 1.75, 2]
+        scales = [0.5, 0.6, 0.75, 0.90, 1.25, 1.5, 1.75, 2]
         avg_error_per_scale = []
         for scale in scales:
             resize_height = math.floor(height * scale)
@@ -196,10 +199,11 @@ def main():
             print_and_write(
                 f"\t Average bit accuracy = {(1 - error_avg) * 100:.5f}%", results_path)
 
-        save_graph(graph_path, scales, avg_error_per_scale,
+        save_graph(results_dir, scales, avg_error_per_scale,
                    "Resize scale (x and y)")
     elif args.attack == "shear":
-        angles = [2, 5, 10, 15, 20, 30, 45, 60, 75]
+        # angles = [5, 10, 15, 20, 25, 30, 35, 40, 45, 60, 75]
+        angles = [2, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 75]
         avg_error_per_angle = []
         for angle in angles:
 
@@ -230,11 +234,12 @@ def main():
             print_and_write(
                 f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
 
-        save_graph(graph_path, angles, avg_error_per_angle,
+        save_graph(results_dir, angles, avg_error_per_angle,
                    "Shear angle (Degrees)")
     elif args.attack == "translate":
         # distance ratios (images of size [w x h] will be translated with distances [w * dr, h * dr]).
-        drs = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
+        # drs = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
+        drs = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.75]
         avg_error_per_dr = []
         for dr in drs:
             dx = math.floor(width * dr)
@@ -272,7 +277,7 @@ def main():
                 f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
 
         drs_percent = [dr * 100 for dr in drs]
-        save_graph(graph_path, drs_percent, avg_error_per_dr,
+        save_graph(results_dir, drs_percent, avg_error_per_dr,
                    "Translation ratio (Percentage)")
     elif args.attack == "mirror":
         error_rates, error_avg, ssim_avg, attack_images = eval(images, hidden_net,
@@ -319,7 +324,7 @@ def main():
             print_and_write(
                 f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
 
-        save_graph(graph_path, kernel_sizes, avg_error_per_ks, "Kernel size")
+        save_graph(results_dir, kernel_sizes, avg_error_per_ks, "Kernel size")
     elif args.attack == "cropout":
         keep_ratios = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
         avg_error_per_keep_ratio = []
@@ -350,7 +355,7 @@ def main():
 
         keep_ratios_percent = [keep_ratio * 100 for keep_ratio in keep_ratios]
 
-        save_graph(graph_path, keep_ratios_percent,
+        save_graph(results_dir, keep_ratios_percent,
                    avg_error_per_keep_ratio, "Keep ratio (%)", True)
     elif args.attack == "dropout":
         _, _, _, watermark_images = eval(images, hidden_net,
@@ -386,17 +391,17 @@ def main():
 
         keep_ratios_percent = [keep_ratio * 100 for keep_ratio in keep_ratios]
 
-        save_graph(graph_path, keep_ratios_percent,
+        save_graph(results_dir, keep_ratios_percent,
                    avg_error_per_keep_ratio, "Keep ratio (%)", True)
     elif args.attack == "identity":
         # TODO do different arg parser flow for this case?
-        error_rates, error_avg, ssim_avg, attack_images = eval(images, hidden_net,
-                                                               args.batch_size, hidden_config.message_length,
-                                                               lambda img: img,
-                                                               device)
+        error_rates, error_avg, ssim_avg, watermark_images = eval(images, hidden_net,
+                                                                  args.batch_size, hidden_config.message_length,
+                                                                  lambda img: img,
+                                                                  device)
 
         if args.save_images:
-            save_images(attack_images,
+            save_images(watermark_images,
                         filenames,
                         os.path.join(results_dir, "images"))
 
@@ -405,6 +410,9 @@ def main():
             f"\t Average bit accuracy = {(1 - error_avg) * 100:.5f}%", results_path)
         print_and_write(
             f"\t Average SSIM = {ssim_avg * 100:.5f}%\n", results_path)
+
+        save_images_with_diffs(images, watermark_images,
+                               os.path.join(results_dir, "diffs"))
 
     # transpose list of lists
     csv_rows = list(map(list, zip(filenames, *error_rates_all)))
@@ -425,6 +433,78 @@ def save_images(images, filenames, folder):
         path = os.path.join(folder, filename)
         img = (img + 1) / 2  # restore to [0, 1] range
         save_image(img, path)
+
+
+def save_images_with_diffs(images: torch.Tensor, watermark_images: List[torch.Tensor], folder):
+    os.makedirs(folder)
+    image_count = 6
+    image_size = 512
+    for i in range(image_count):
+        random_index = random.randint(0, len(images) - 1)
+        img = images[random_index].clip(-1, 1)
+        wm_img = watermark_images[random_index].clip(-1, 1)
+
+        img = (img + 1) / 2  # restore to [0, 1] range
+        wm_img = (wm_img + 1) / 2  # restore to [0, 1] range
+
+        img = TF.resize(img, (image_size, image_size))
+        wm_img = TF.resize(wm_img, (image_size, image_size))
+
+        # diff = torch.abs(img - wm_img)
+        # diff = diff * 20
+        # diff_mean = torch.mean(diff, dim=0)
+        # diff_pil = TF.to_pil_image(diff_mean, mode="L")
+        # diff_pil = TF.equalize(diff_pil)
+
+        img_yuv = torch.empty_like(img)
+        wm_img_yuv = torch.empty_like(wm_img)
+        rgb2yuv(img, img_yuv)
+        rgb2yuv(wm_img, wm_img_yuv)
+        diff = torch.abs(img_yuv - wm_img_yuv) * 255
+        _, h, w = diff.shape
+        diff[1] = torch.ones((h, w)) * 0
+        diff[2] = torch.ones((h, w)) * 0
+        diff = (diff * 15).clip(0, 255)
+        diff = (diff / 255)
+        yuv2rgb(diff, diff)
+
+        diff = diff.clip(0, 1)
+
+        img_pil = TF.to_pil_image(img, mode="RGB")
+        wm_img_pil = TF.to_pil_image(wm_img, mode="RGB")
+        # rgb diff to grayscale
+        diff_pil = TF.to_pil_image(diff, mode="RGB")
+        diff_pil = TF.to_grayscale(diff_pil, num_output_channels=1)
+
+        # save images
+        img_pil.save(os.path.join(folder, f"original-{i + 1}.png"))
+        wm_img_pil.save(os.path.join(folder, f"watermarked-{i + 1}.png"))
+        diff_pil.save(os.path.join(folder, f"diff-{i + 1}.png"))
+
+
+def rgb2yuv(image_rgb, image_yuv_out):
+    """ Transform the image from rgb to yuv """
+    image_yuv_out[0, :, :] = 0.299 * image_rgb[0, :, :].clone() + 0.587 * image_rgb[1, :,
+                                                                                    :].clone() + 0.114 * image_rgb[2, :,
+                                                                                                                   :].clone()
+    image_yuv_out[1, :, :] = -0.14713 * image_rgb[0, :, :].clone() + -0.28886 * image_rgb[1, :,
+                                                                                          :].clone() + 0.436 * image_rgb[2, :,
+                                                                                                                         :].clone()
+    image_yuv_out[2, :, :] = 0.615 * image_rgb[0, :, :].clone() + -0.51499 * image_rgb[1, :,
+                                                                                       :].clone() + -0.10001 * image_rgb[
+        2, :,
+        :].clone()
+
+
+def yuv2rgb(image_yuv, image_rgb_out):
+    """ Transform the image from yuv to rgb """
+    image_rgb_out[0, :, :] = image_yuv[0, :,
+                                       :].clone() + 1.13983 * image_yuv[2, :, :].clone()
+    image_rgb_out[1, :, :] = image_yuv[0, :, :].clone() + -0.39465 * image_yuv[1, :,
+                                                                               :].clone() + -0.58060 * image_yuv[2, :,
+                                                                                                                 :].clone()
+    image_rgb_out[2, :, :] = image_yuv[0, :,
+                                       :].clone() + 2.03211 * image_yuv[1, :, :].clone()
 
 
 def print_and_write(s: str, path: str):
@@ -530,7 +610,7 @@ def dropout(watermark_images: torch.Tensor, cover_images: torch.Tensor, keep_rat
     return watermark_images * mask_tensor + cover_images * (1 - mask_tensor)
 
 
-def save_graph(path: str,
+def save_graph(folder: str,
                params: Sequence[Union[int, float]],
                bit_errors: List[float],
                xlabel: str,
@@ -545,7 +625,13 @@ def save_graph(path: str,
         plt.gca().invert_xaxis()
 
     plt.grid()
-    plt.savefig(path)
+    plt.savefig(os.path.join(folder, "graph.png"))
+
+    # save data to csv
+    with open(os.path.join(folder, "graph.csv"), "w") as f:
+        f.write("param,bit_accuracy\n")
+        for param, bit_accuracy in zip(params, bit_accuracies):
+            f.write(f"{param},{bit_accuracy}\n")
 
 
 if __name__ == "__main__":
