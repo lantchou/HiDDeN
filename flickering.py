@@ -1,6 +1,7 @@
 import os
 import cv2
 import numpy as np
+import sys
 
 def calculate_flicker_index(frame_folder):
     frame_files = sorted(os.listdir(frame_folder))
@@ -33,6 +34,7 @@ def calculate_flicker_index(frame_folder):
     return flicker_index
 
 if __name__ == "__main__":
-    input_folder = input("Input folder: ")
+    # read input folder from stdin args
+    input_folder = sys.argv[1]
     flicker_index = calculate_flicker_index(input_folder)
     print("Flicker Index:", flicker_index)
