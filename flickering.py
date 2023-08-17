@@ -22,7 +22,6 @@ def calculate_flicker_index(frame_folder):
         frame1 = frame1 / 255
         frame2 = frame2 / 255
         frame_diff = np.abs(frame1 - frame2)
-        frame_diff = frame_diff / 255
         frame_diff = frame_diff.sum()
         height, width = frame1.shape
         frame_diff = frame_diff / (height * width)
