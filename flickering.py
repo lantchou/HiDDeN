@@ -4,7 +4,7 @@ import numpy as np
 
 def calculate_flicker_index(frame_folder):
     frame_files = sorted(os.listdir(frame_folder))
-    frame_paths = [os.path.join(frame_folder, filename) for filename in frame_files]
+    frame_paths = [os.path.join(frame_folder, filename) for filename in frame_files if not filename.endswith(".")]
     print(frame_paths)
 
 
