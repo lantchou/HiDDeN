@@ -14,8 +14,6 @@ def calculate_flicker_index(frame_folder):
         frame2 = cv2.imread(frame_paths[i + 1])
         frame1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
         frame2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
-        frame1 = cv2.resize(frame1, (128, 128))
-        frame2 = cv2.resize(frame2, (128, 128))
         # calculate height and width
         frame1 = frame1.astype(np.float32)
         frame2 = frame2.astype(np.float32)
