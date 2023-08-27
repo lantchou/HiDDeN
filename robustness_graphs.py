@@ -3,6 +3,7 @@ import numpy as np
 from numpy.polynomial.polynomial import Polynomial
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MultipleLocator
+from matplotlib.lines import Line2D
 from scipy import interpolate
 
 
@@ -26,27 +27,28 @@ def get_csv_data(path, min_param_val=None):
         return params, bit_accuracies, id_pos
 
 
-BLUE = "#1f77b4"
-ORANGE = "#ff7f0e"
-GREEN = "#2ca02c"
-RED = "#d62728"
+IDENTITY_COLOR = "#1f77b4"
+COMBINED_COLOR = "#ff7f0e"
+SPECIALIZED_COLOR = "#2ca02c"
+RIVAGAN_COLOR = "#d62728"
 
 
 ROBUSTNESS_DATA = [
     {
         "csv_files": ["robustness/crop/identity.csv", "robustness/crop/combined.csv"],
-        "title": "Cropping",
+        "title": "Cropping (p)",
         "invert_x": True,
         "offsets": [0, -0.45],
         "x_interval": 0.2,
         "x_range": (0.1, 1),
         "id_param_val": 1,
         "x_label": "Crop ratio p",
-        "colors": [BLUE, ORANGE],
+        "colors": [IDENTITY_COLOR, COMBINED_COLOR],
+        "labels": ["Identity", "Combined"],
     },
     {
-        "csv_files": ["robustness/resize/identity.csv", "robustness/resize/combined.csv", "robustness/resize/specialized.csv", ],
-        "title": "Rescaling",
+        "csv_files": ["robustness/resize/identity.csv", "robustness/resize/specialized.csv", "robustness/resize/combined.csv"],
+        "title": "Rescaling (s)",
         "invert_x": False,
         "offsets": [0, 0, 0],
         "x_interval": 0.5,
@@ -54,98 +56,118 @@ ROBUSTNESS_DATA = [
         "id_param_val": 1,
         # "smoothing": 10,
         "x_label": "Rescale ratio s",
+        "colors": [IDENTITY_COLOR, SPECIALIZED_COLOR, COMBINED_COLOR],
+        "labels": ["Identity", "Specialized", "Combined"],
     },
     {
-        "csv_files": ["robustness/translate/identity.csv", "robustness/translate/combined.csv", "robustness/translate/specialized.csv"],
-        "title": "Translate (t)",
+        "csv_files": ["robustness/translate/identity.csv", "robustness/translate/specialized.csv", "robustness/translate/combined.csv"],
+        "title": "Translation (t)",
         "invert_x": False,
         "offsets": [0, 0, -0.35],
         "x_interval": 0.2,
         "x_range": (0, 0.75),
         "id_param_val": 0.0,
         "x_label": "Translation ratio t",
+        "colors": [IDENTITY_COLOR, SPECIALIZED_COLOR, COMBINED_COLOR],
+        "labels": ["Identity", "Specialized", "Combined"],
     },
     {
-        "csv_files": ["robustness/rotate/identity.csv", "robustness/rotate/combined.csv", "robustness/rotate/specialized.csv"],
-        "title": "Rotation",
+        "csv_files": ["robustness/rotate/identity.csv", "robustness/rotate/specialized.csv", "robustness/rotate/combined.csv",],
+        "title": "Rotation (θ)",
         "invert_x": False,
         "offsets": [0, 0, 0],
         "x_interval": 15,
         "x_range": (0, 90),
         "id_param_val": 0,
         "format_int": True,
+        "colors": [IDENTITY_COLOR, SPECIALIZED_COLOR, COMBINED_COLOR],
+        "labels": ["Identity", "Specialized", "Combined"],
         # "smoothing": 27
 
     },
     {
-        "csv_files": ["robustness/shear/identity.csv", "robustness/shear/combined.csv", "robustness/shear/specialized.csv"],
-        "title": "Shear (φ)",
+        "csv_files": ["robustness/shear/identity.csv", "robustness/shear/specialized.csv", "robustness/shear/combined.csv"],
+        "title": "Shearing (φ)",
         "invert_x": False,
         "offsets": [0, 0, 0],
         "x_interval": 15,
         "x_range": (0, 75),
         "id_param_val": 0,
         "format_int": True,
+        "colors": [IDENTITY_COLOR, SPECIALIZED_COLOR, COMBINED_COLOR],
+        "labels": ["Identity", "Specialized", "Combined"],
     },
     {
-        "csv_files": ["robustness/blur/identity.csv", "robustness/blur/combined.csv", "robustness/blur/specialized.csv"],
-        "title": "Gaussian Blur (σ)",
+        "csv_files": ["robustness/blur/identity.csv", "robustness/blur/specialized.csv", "robustness/blur/combined.csv"],
+        "title": "Gaussian blurring (σ)",
         "invert_x": False,
         "offsets": [0, 0, 0],
         "x_interval": 2,
         "x_range": (1, 9),
         "id_param_val": 0,
         "format_int": True,
+        "colors": [IDENTITY_COLOR, SPECIALIZED_COLOR, COMBINED_COLOR],
+        "labels": ["Identity", "Specialized", "Combined"],
     },
     {
-        "csv_files": ["robustness/jpeg/identity.csv", "robustness/jpeg/combined.csv", "robustness/jpeg/specialized.csv"],
+        "csv_files": ["robustness/jpeg/identity.csv", "robustness/jpeg/specialized.csv", "robustness/jpeg/combined.csv"],
         "title": "JPEG (q)",
         "invert_x": True,
         "offsets": [0, 0, 0],
         "x_interval": 20,
         "x_range": (100, 10),
         "format_int": True,
+        "colors": [IDENTITY_COLOR, SPECIALIZED_COLOR, COMBINED_COLOR],
+        "labels": ["Identity", "Specialized", "Combined"],
     },
     {
-        "data_files": ["robustness/mirror/identity.txt", "robustness/mirror/combined.txt", "robustness/mirror/specialized.txt", ],
-        "title": "Mirror",
-        "categories": ["Identity", "Combined", "Specialized"],
+        "data_files": ["robustness/mirror/identity.txt", "robustness/mirror/specialized.txt", "robustness/mirror/combined.txt", ],
+        "title": "Mirroring",
+        "categories": ["Identity", "Specialized", "Combined"],
+        "colors": [IDENTITY_COLOR, SPECIALIZED_COLOR, COMBINED_COLOR],
+        "labels": ["Identity", "Specialized", "Combined"],
     }
 ]
 
 ROBUSTNESS_DATA_RIVAGAN = [
     {
-        "csv_files": ["robustness/crop/identity.csv", "robustness/crop/rivagan.csv", "robustness/crop/combined.csv"],
-        "title": "Crop (p)",
+        "csv_files": ["robustness/crop/identity.csv", "robustness/crop/combined.csv", "robustness/crop/rivagan.csv",],
+        "title": "Cropping (p)",
         "invert_x": True,
         "offsets": [0, -.8, -0.75],
         "x_interval": 0.1,
         "x_range": (0.3, 1),
         "id_param_val": 1,
         "min_param_val": 0.3,
+        "colors": [IDENTITY_COLOR, COMBINED_COLOR, RIVAGAN_COLOR],
+        "labels": ["Identity", "Combined", "RivaGAN"],
     },
     {
-        "csv_files": ["robustness/resize/identity.csv", "robustness/resize/rivagan.csv", "robustness/resize/combined.csv", "robustness/resize/specialized.csv", ],
-        "title": "Rescale (s)",
+        "csv_files": ["robustness/resize/identity.csv", "robustness/resize/specialized.csv", "robustness/resize/combined.csv", "robustness/resize/rivagan.csv", ],
+        "title": "Rescaling (s)",
         "invert_x": False,
         "offsets": [0, 0, 0, 0],
         "x_interval": 0.5,
         "x_range": (0.5, 2),
         "id_param_val": 1,
         # "smoothing": 10,
+        "colors": [IDENTITY_COLOR, SPECIALIZED_COLOR, COMBINED_COLOR, RIVAGAN_COLOR],
+        "labels": ["Identity", "Specialized", "Combined", "RivaGAN"],
     },
     {
-        "csv_files": ["robustness/translate/identity.csv", "robustness/translate/rivagan.csv", "robustness/translate/combined.csv", "robustness/translate/specialized.csv", ],
-        "title": "Translate (t)",
+        "csv_files": ["robustness/translate/identity.csv", "robustness/translate/specialized.csv", "robustness/translate/combined.csv", "robustness/translate/rivagan.csv", ],
+        "title": "Translation (t)",
         "invert_x": False,
         "offsets": [0, 0, -0.35, 0],
         "x_interval": 0.2,
         "x_range": (0, 0.75),
         "id_param_val": 0.0,
+        "colors": [IDENTITY_COLOR, SPECIALIZED_COLOR, COMBINED_COLOR, RIVAGAN_COLOR],
+        "labels": ["Identity", "Specialized", "Combined", "RivaGAN"],
     },
     {
-        "csv_files": ["robustness/rotate/identity.csv", "robustness/rotate/rivagan.csv", "robustness/rotate/combined.csv", "robustness/rotate/specialized.csv", ],
-        "title": "Rotate (θ)",
+        "csv_files": ["robustness/rotate/identity.csv", "robustness/rotate/specialized.csv", "robustness/rotate/combined.csv", "robustness/rotate/rivagan.csv", ],
+        "title": "Rotation (θ)",
         "invert_x": False,
         "offsets": [0, 0, 0, 0],
         "x_interval": 15,
@@ -153,51 +175,62 @@ ROBUSTNESS_DATA_RIVAGAN = [
         "id_param_val": 0,
         "format_int": True,
         # "smoothing": 27
+        "colors": [IDENTITY_COLOR, SPECIALIZED_COLOR, COMBINED_COLOR, RIVAGAN_COLOR],
+        "labels": ["Identity", "Specialized", "Combined", "RivaGAN"],
     },
     {
-        "csv_files": ["robustness/shear/identity.csv", "robustness/shear/rivagan.csv", "robustness/shear/combined.csv", "robustness/shear/specialized.csv", ],
-        "title": "Shear (φ)",
+        "csv_files": ["robustness/shear/identity.csv", "robustness/shear/specialized.csv", "robustness/shear/combined.csv", "robustness/shear/rivagan.csv", ],
+        "title": "Shearing (φ)",
         "invert_x": False,
         "offsets": [0, 0, 0, 0],
         "x_interval": 15,
         "x_range": (0, 75),
         "id_param_val": 0,
         "format_int": True,
+        "colors": [IDENTITY_COLOR, SPECIALIZED_COLOR, COMBINED_COLOR, RIVAGAN_COLOR],
+        "labels": ["Identity", "Specialized", "Combined", "RivaGAN"],
     },
     {
-        "csv_files": ["robustness/blur/identity.csv", "robustness/blur/rivagan.csv", "robustness/blur/combined.csv", "robustness/blur/specialized.csv", ],
-        "title": "Gaussian Blur (σ)",
+        "csv_files": ["robustness/blur/identity.csv", "robustness/blur/specialized.csv", "robustness/blur/combined.csv", "robustness/blur/rivagan.csv", ],
+        "title": "Gaussian blurring (σ)",
         "invert_x": False,
         "offsets": [0, 0, 0, 0],
         "x_interval": 2,
         "x_range": (1, 9),
         "id_param_val": 0,
         "format_int": True,
+        "colors": [IDENTITY_COLOR, SPECIALIZED_COLOR, COMBINED_COLOR, RIVAGAN_COLOR],
+        "labels": ["Identity", "Specialized", "Combined", "RivaGAN"],
     },
     {
-        "csv_files": ["robustness/jpeg/identity.csv", "robustness/jpeg/rivagan.csv", "robustness/jpeg/combined.csv", "robustness/jpeg/specialized.csv", ],
+        "csv_files": ["robustness/jpeg/identity.csv", "robustness/jpeg/specialized.csv", "robustness/jpeg/combined.csv", "robustness/jpeg/rivagan.csv", ],
         "title": "JPEG (q)",
         "invert_x": True,
         "offsets": [0, 0, 0, 0],
         "x_interval": 20,
         "x_range": (100, 10),
         "format_int": True,
+        "colors": [IDENTITY_COLOR, SPECIALIZED_COLOR, COMBINED_COLOR, RIVAGAN_COLOR],
+        "labels": ["Identity", "Specialized", "Combined", "RivaGAN"],
     },
     {
-        "data_files": ["robustness/mirror/identity.txt", "robustness/mirror/rivagan.txt", "robustness/mirror/combined.txt", "robustness/mirror/specialized.txt", ],
-        "title": "Mirror",
-        "categories": ["Identity", "RivaGAN", "Combined", "Specialized"],
+        "data_files": ["robustness/mirror/identity.txt", "robustness/mirror/specialized.txt", "robustness/mirror/combined.txt", "robustness/mirror/rivagan.txt", ],
+        "title": "Mirroring",
+        "categories": ["Identity", "Specialized", "Combined", "RivaGAN"],
+        "labels": ["Identity", "Specialized", "Combined", "RivaGAN"],
+        "colors": [IDENTITY_COLOR, SPECIALIZED_COLOR, COMBINED_COLOR, RIVAGAN_COLOR],
     }
 ]
 
 
-def robustness_graphs(robustness_data, legend, path):
+def robustness_graphs(robustness_data, legend, legend_colors, path):
     fig, axes = plt.subplots(3, 3, sharey='row', figsize=(12, 8))
 
     # Adjust the spacing as needed
     plt.subplots_adjust(hspace=0.33, wspace=0.07)
 
-    colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
+    all_colors = []
+    all_labels = []
 
     for i, ax in enumerate(axes.flat):
         if i >= len(robustness_data):
@@ -205,14 +238,26 @@ def robustness_graphs(robustness_data, legend, path):
 
         attack_data = robustness_data[i]
 
+        colors = attack_data["colors"]
+        for color in colors:
+            if color not in all_colors:
+                all_colors.append(color)
+
+        labels = attack_data["labels"]
+        for label in labels:
+            if label not in all_labels:
+                all_labels.append(label)
+
         if "data_files" in attack_data:
             data_files = attack_data["data_files"]
             categories = attack_data["categories"]
             data = [float(np.loadtxt(data_file)) for data_file in data_files]
-            ax.bar(categories, data, color=colors, label=legend, width=0.33, align='center')
+            ax.bar(categories, data, color=colors,
+                   label=legend, width=0.33, align='center')
             ax.set_ylim(bottom=45, top=102)
             # y grid
-            ax.yaxis.grid(True, linestyle='--', which='major', color='grey', alpha=.33)
+            ax.yaxis.grid(True, linestyle='--', which='major',
+                          color='grey', alpha=.33)
             ax.set_title(attack_data["title"])
             if i == len(robustness_data) - 1:
                 # leg = ax.legend(legend,
@@ -254,9 +299,11 @@ def robustness_graphs(robustness_data, legend, path):
                     params_new, acc_with_offset)
                 x_new = x_new[::-1] if attack_data["invert_x"] else x_new
                 y_new = bspline(x_new)
-                ax.plot(x_new, y_new, color=colors[j], label=legend[j], marker='.')
+                ax.plot(x_new, y_new,
+                        color=colors[j], label=labels[j], marker='.')
             else:
-                ax.plot(params, acc_with_offset, color=colors[j], label=legend[j], marker='.')
+                ax.plot(params, acc_with_offset,
+                        color=colors[j], label=labels[j], marker='.')
 
         # Set the x-axis ticks using MultipleLocator
         x_interval = attack_data["x_interval"]
@@ -325,7 +372,7 @@ def robustness_graphs(robustness_data, legend, path):
     #     loc='upper center',)
 
     # Add shared legend
-    handles, labels = list(axes.flat)[1].get_legend_handles_labels()
+    # handles, labels = list(axes.flat)[1].get_legend_handles_labels()
     # for i, ax in enumerate(axes.flat):
     #     handles_temp, labels_temp = ax.get_legend_handles_labels()
     #     handles.extend(handles_temp)
@@ -340,15 +387,27 @@ def robustness_graphs(robustness_data, legend, path):
     # plt.legend(legend,
     #            loc='lower right', bbox_to_anchor=(1.8, 0.3), prop={'size': 10.5})
     # fig.legend(handles, labels, loc='center right', bbox_to_anchor=(2.5, 0.3))
-    fig.legend(handles, labels, loc='lower right', bbox_to_anchor=(0.85, 0.15))
+    print(legend)
+    print(legend_colors)
+    handles = [Line2D([0], [0], label=label, color=color, )
+               for label, color in zip(legend, legend_colors)]
+
+    fig.legend(handles,
+               legend,
+               loc='lower right',
+               bbox_to_anchor=(0.85, 0.15),
+               fancybox=True)
 
     plt.savefig(path)
 
 
 if __name__ == "__main__":
     robustness_graphs(ROBUSTNESS_DATA,
-                      ["Identity", "Combined", "Specialized"],
+                      ["Identity", "Specialized", "Combined"],
+                      [IDENTITY_COLOR, SPECIALIZED_COLOR, COMBINED_COLOR],
                       "figures-output/robustness/robustness-own.pdf")
     robustness_graphs(ROBUSTNESS_DATA_RIVAGAN,
-                      ["Identity", "RivaGAN", "Combined", "Specialized"],
+                      ["Identity", "Specialized", "Combined", "RivaGAN"],
+                      [IDENTITY_COLOR, SPECIALIZED_COLOR,
+                          COMBINED_COLOR, RIVAGAN_COLOR],
                       "figures-output/robustness/robustness-rivagan.pdf")
